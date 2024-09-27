@@ -3,8 +3,8 @@ Place the plain_dataset folder, which can be downloaded from [dropbox](https://w
 
 MISSING DATASETS:
 
-10X
-TBAdb 
+-10X
+-TBAdb 
 
 
 REFERENZ CHECKED FROM REPORT: https://ieeexplore.ieee.org/document/10605308/keywords#keywords
