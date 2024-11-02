@@ -19,8 +19,8 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "VanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 128
-EPOCHS = 250
+BATCH_SIZE = 64 #128
+EPOCHS = 20 #250
 # IMPORTANT: keep NUM_WORKERS = 0!
 NUM_WORKERS = 0
 
@@ -137,7 +137,7 @@ def main():
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
     print(f"PROJECT_NAME: {PROJECT_NAME}")
-    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="ba-zhaw")
+    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
 
     # -----------------------------------------------------------------------------
