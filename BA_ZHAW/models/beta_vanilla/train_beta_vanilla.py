@@ -154,8 +154,11 @@ def main():
 
     print("erster Stopp")
     train_dataset = BetaVanilla(train_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
+    print("Train dataset")
     test_dataset = BetaVanilla(test_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
+    print("Test dataset")
     val_dataset = BetaVanilla(val_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
+    print("validation dataset")
     print("zweiter Stopp")
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
