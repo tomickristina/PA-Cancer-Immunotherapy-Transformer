@@ -19,8 +19,8 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "VanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 64 #128
-EPOCHS = 20 250
+BATCH_SIZE = 128 #256
+EPOCHS = 250
 # IMPORTANT: keep NUM_WORKERS = 0!
 NUM_WORKERS = 0
 
@@ -170,10 +170,12 @@ def main():
     trbJ_embed_len = get_embed_len(df_full, "TRBJ")
     mhc_embed_len = get_embed_len(df_full, "MHC")
 
+    print("erster Stopp")
     train_dataset = PairedVanilla(train_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     test_dataset = PairedVanilla(test_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     val_dataset = PairedVanilla(val_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
-
+    print("zweiter Stopp")
+    
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
 
@@ -258,8 +260,8 @@ def main():
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
         callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
-        accelerator="gpu",
-    )
+        accelerator="gpu", precision = 16
+    ) # add mixed precision
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
     best_model_path = model_checkpoint.best_model_path
