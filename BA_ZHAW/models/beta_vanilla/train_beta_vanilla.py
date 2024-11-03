@@ -19,7 +19,7 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "BetaVanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 256
+BATCH_SIZE = 128 #256
 EPOCHS = 275
 # IMPORTANT: keep NUM_WORKERS = 0!
 NUM_WORKERS = 0
@@ -33,11 +33,11 @@ DEVICE = (
     else "cpu"
 )
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-import torch
-print(torch.cuda.is_available())  # Sollte True zurückgeben
-print(torch.version.cuda)
+#import torch
+#print(torch.cuda.is_available())  # Sollte True zurückgeben
+#print(torch.version.cuda)
 
 def set_hyperparameters(config):
     hyperparameters = {}
@@ -120,7 +120,8 @@ def main():
 
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
-    PROJECT_NAME = "dataset-allele" #os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = "dataset-allele" 
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
@@ -141,6 +142,7 @@ def main():
     df_test = pd.read_csv(test_file_path, sep="\t")
     df_val = pd.read_csv(val_file_path, sep="\t")
     df_full = pd.concat([df_train, df_test, df_val])
+    print(df_train.head())
     
     trbV_dict = column_to_dictionray(df_full, "TRBV")
     trbJ_dict = column_to_dictionray(df_full, "TRBJ")
@@ -150,11 +152,11 @@ def main():
     trbJ_embed_len = get_embed_len(df_full, "TRBJ")
     mhc_embed_len = get_embed_len(df_full, "MHC")
 
-
+    print("erster Stopp")
     train_dataset = BetaVanilla(train_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
     test_dataset = BetaVanilla(test_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
     val_dataset = BetaVanilla(val_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
-
+    print("zweiter Stopp")
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
 
@@ -204,7 +206,6 @@ def main():
         hyperparameters["dropout_linear"] = 0.45
         
     model = BetaVanillaModel(EMBEDDING_SIZE, SEQ_MAX_LENGTH, DEVICE, trbV_embed_len, trbJ_embed_len, mhc_embed_len, hyperparameters)
-    model = model.to(DEVICE)  # Move model to GPU
     # ---------------------------------------------------------------------------------
     # training
     # ---------------------------------------------------------------------------------
@@ -213,7 +214,7 @@ def main():
     # This logs gradients
     wandb_logger.watch(model)
     tensorboard_logger = TensorBoardLogger("tb_logs", name=f"{MODEL_NAME}")
-
+    print("wandb logger initialisiert")
     # Callbacks
     run_name = wandb.run.name  
     checkpoint_dir = f"checkpoints/{run_name}"

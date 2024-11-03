@@ -5,9 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fdc596b1-856c-49cb-a9f8-6df423acbb22" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/BA_ZHAW/data_pipeline.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/data_pipeline.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BA_ZHAW/data_pipeline_10x.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/data_pipeline_10x.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BA_ZHAW/data_scripts/generateEmbeddings.py" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/data_scripts/generateEmbeddings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BA_ZHAW/models/beta_vanilla/train_beta_vanilla.py" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/models/beta_vanilla/train_beta_vanilla.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BA_ZHAW/models/paired_physico/train_physico.py" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/models/paired_physico/train_physico.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BA_ZHAW/models/paired_vanilla/train_vanilla.py" beforeDir="false" afterPath="$PROJECT_DIR$/BA_ZHAW/models/paired_vanilla/train_vanilla.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +34,7 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "scale__p",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "/home/ubuntu/.ssh/authorized_keys",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -62,15 +63,15 @@
       <window_info anchor="bottom" id="Python Console" />
       <window_info anchor="bottom" id="Jupyter" />
       <window_info anchor="bottom" id="Version Control" order="0" weight="0.42345434" />
-      <window_info anchor="bottom" id="Problems View" order="2" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="3" visible="true" weight="0.28900886" />
-      <window_info anchor="bottom" id="Run" order="4" weight="0.28900886" />
+      <window_info anchor="bottom" id="Problems View" order="1" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="2" visible="true" weight="0.28900886" />
+      <window_info anchor="bottom" id="Run" order="3" weight="0.28900886" />
       <window_info anchor="bottom" id="Services" order="4" weight="0.28900886" />
       <window_info anchor="right" id="Endpoints" />
       <window_info anchor="right" id="SciView" />
       <window_info active="true" anchor="right" id="Meet New UI" side_tool="true" weight="0.3300866" />
       <window_info anchor="right" id="Notifications" order="0" weight="0.3301062" />
-      <window_info anchor="right" id="Database" order="2" weight="0.25" />
+      <window_info anchor="right" id="Database" order="1" weight="0.25" />
     </layout>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -82,7 +83,8 @@
       <option name="presentableId" value="Default" />
       <updated>1730363069012</updated>
       <workItem from="1730363070788" duration="29000" />
-      <workItem from="1730363106439" duration="7560000" />
+      <workItem from="1730363106439" duration="8180000" />
+      <workItem from="1730563633781" duration="933000" />
     </task>
     <servers />
   </component>
