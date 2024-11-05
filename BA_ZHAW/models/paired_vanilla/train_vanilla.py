@@ -136,7 +136,7 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
-    PROJECT_NAME = "dataset-allele"
+    PROJECT_NAME = "dataset-allele" # for gene: dataset-gene
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
@@ -218,7 +218,7 @@ def main():
         hyperparameters = set_hyperparameters(config)
     else:
         hyperparameters = {}
-        hyperparameters["optimizer"] = "adam"
+        hyperparameters["optimizer"] = "sgd" #adam
         hyperparameters["learning_rate"] = 5e-3
         hyperparameters["weight_decay"] = 0.075
         hyperparameters["dropout_attention"] = 0.3
@@ -260,7 +260,7 @@ def main():
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
         callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
-        accelerator="gpu", precision = 16
+        accelerator="gpu"
     ) # add mixed precision
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)

@@ -110,13 +110,14 @@ def main():
     experiment_name = f"Experiment Evaluation (Gene) - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = "dataset-allele" # for gene: dataset-gene
     print(f"PROJECT_NAME: {PROJECT_NAME}")
-    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="ba-zhaw")
+    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
 
     # Download corresponding artifact (= dataset) from W&B
     # precision = "allele"  # or gene
-    precision = "gene"
+    precision = "allele"
     print(f"precision: {precision}")
     dataset_name = f"paired_{precision}"
     artifact = run.use_artifact(f"{dataset_name}:latest")
@@ -145,7 +146,7 @@ def main():
     trbJ_embed_len = get_embed_len(df_full, "TRBJ")
     mhc_embed_len = get_embed_len(df_full, "MHC")
 
-    embed_base_dir = "/teamspace/studios/this_studio/BA/paired"
+    embed_base_dir = f"../../data/embeddings/paired/{precision}"
 
     unseen_test_dataset = PairedVanilla(unseen_test_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     # test_dataset = PairedVanilla(test_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
