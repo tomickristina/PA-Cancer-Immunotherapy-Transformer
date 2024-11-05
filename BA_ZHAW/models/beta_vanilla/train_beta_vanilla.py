@@ -202,7 +202,7 @@ def main():
         hyperparameters = set_hyperparameters(config)  # hyperparameter tuning with Weight&Biases sweeps
     else:
         hyperparameters = {}
-        hyperparameters["optimizer"] = "adam"
+        hyperparameters["optimizer"] = "sgd" #adam
         hyperparameters["learning_rate"] = 5e-3
         hyperparameters["weight_decay"] = 0.075
         hyperparameters["dropout_attention"] = 0.3
