@@ -124,7 +124,7 @@ split = args.split
 print(f"You chose the dataset: {dataset}")
 print(f"The split method is: {split}")
 
-
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 for i in range(5):
     train_folds = ''.join([str(j) for j in range(5) if j != i])
@@ -141,7 +141,7 @@ for i in range(5):
     test_data_df = pd.read_csv(file_path)
 
     GTE = GraphNet(num_node_features=test_data.num_node_features).to(device)
-    GTE.load_state_dict(torch.load(model_path))
+    GTE.load_state_dict(torch.load(model_path, map_location=device))
     GTE.eval()
 
     with torch.no_grad():

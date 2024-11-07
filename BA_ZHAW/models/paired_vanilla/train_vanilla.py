@@ -22,7 +22,7 @@ EMBEDDING_SIZE = 1024
 BATCH_SIZE = 128 #256
 EPOCHS = 250
 # IMPORTANT: keep NUM_WORKERS = 0!
-NUM_WORKERS = 0
+NUM_WORKERS = 4
 
 MODEL_OUT = f"{MODEL_NAME}.pth"
 DEVICE = (
@@ -125,7 +125,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # or gene
+    precision = "gene" # or allele
     embed_base_dir = f"../../data/embeddings/paired/{precision}"
     hyperparameter_tuning_with_WnB = False
 
@@ -136,7 +136,7 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
-    PROJECT_NAME = "dataset-allele" # for gene: dataset-gene
+    PROJECT_NAME = "dataset-gene" # for allele: dataset-allele
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
