@@ -19,10 +19,10 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "VanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 128
+BATCH_SIZE = 128 #256
 EPOCHS = 250
 # IMPORTANT: keep NUM_WORKERS = 0!
-NUM_WORKERS = 0
+NUM_WORKERS = 4
 
 MODEL_OUT = f"{MODEL_NAME}.pth"
 DEVICE = (
@@ -125,7 +125,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # or gene
+    precision = "gene" # or allele
     embed_base_dir = f"../../data/embeddings/paired/{precision}"
     hyperparameter_tuning_with_WnB = False
 
@@ -136,8 +136,9 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = "dataset-gene" # for allele: dataset-allele
     print(f"PROJECT_NAME: {PROJECT_NAME}")
-    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="ba-zhaw")
+    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
 
     # -----------------------------------------------------------------------------
@@ -169,10 +170,12 @@ def main():
     trbJ_embed_len = get_embed_len(df_full, "TRBJ")
     mhc_embed_len = get_embed_len(df_full, "MHC")
 
+    print("erster Stopp")
     train_dataset = PairedVanilla(train_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     test_dataset = PairedVanilla(test_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     val_dataset = PairedVanilla(val_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
-
+    print("zweiter Stopp")
+    
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
 
@@ -215,7 +218,7 @@ def main():
         hyperparameters = set_hyperparameters(config)
     else:
         hyperparameters = {}
-        hyperparameters["optimizer"] = "adam"
+        hyperparameters["optimizer"] = "sgd" #adam
         hyperparameters["learning_rate"] = 5e-3
         hyperparameters["weight_decay"] = 0.075
         hyperparameters["dropout_attention"] = 0.3
@@ -257,8 +260,8 @@ def main():
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
         callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
-        accelerator="gpu",
-    )
+        accelerator="gpu"
+    ) # add mixed precision
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
     best_model_path = model_checkpoint.best_model_path

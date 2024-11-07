@@ -22,7 +22,7 @@ EMBEDDING_SIZE = 1024
 BATCH_SIZE = 128
 EPOCHS = 250
 # IMPORTANT: keep NUM_WORKERS = 0!
-NUM_WORKERS = 0
+NUM_WORKERS = 4 #0
 
 DEVICE = (
     "cuda"
@@ -135,7 +135,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # or gene
+    precision = "gene" # or allele
     physico_base_dir = f"../../data/physicoProperties"
     embed_base_dir = f"../../data/embeddings/paired/{precision}"
     hyperparameter_tuning_with_WnB = False
@@ -147,12 +147,9 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = "dataset-gene"
     print(f"PROJECT_NAME: {PROJECT_NAME}")
-    #run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="ba-zhaw")
-    run = wandb.init(
-    project="test",
-    job_type="train",
-    entity="pa_cancerimmunotherapy")
+    run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
 
     # -----------------------------------------------------------------------------
@@ -195,9 +192,11 @@ def main():
     val_physico_tra = f"{physico_base_dir}/scaled_validation_paired_TRA_{precision}_physico.npz"
     val_physico_trb = f"{physico_base_dir}/scaled_validation_paired_TRB_{precision}_physico.npz"
 
+    print("erster Stopp")
     train_dataset = PairedPhysico(train_file_path, embed_base_dir, train_physico_epi, train_physico_tra, train_physico_trb, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     test_dataset = PairedPhysico(test_file_path, embed_base_dir, test_physico_epi, test_physico_tra, test_physico_trb, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
     val_dataset = PairedPhysico(val_file_path, embed_base_dir, val_physico_epi, val_physico_tra, val_physico_trb, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict)
+    print("zweiter Stopp")
 
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
@@ -241,10 +240,14 @@ def main():
     else:
         hyperparameters = {}
         hyperparameters["optimizer"] = "sgd"
-        hyperparameters["learning_rate"] = 0.007810281400752681
+        hyperparameters["learning_rate"] = 5e-3
+        hyperparameters["weight_decay"] = 0.075
+        hyperparameters["dropout_attention"] = 0.3
+        hyperparameters["dropout_linear"] = 0.45
+        '''hyperparameters["learning_rate"] = 0.007810281400752681
         hyperparameters["weight_decay"] = 0.009146917668628398
         hyperparameters["dropout_attention"] = 0.14051600390758243
-        hyperparameters["dropout_linear"] = 0.4620213627675807
+        hyperparameters["dropout_linear"] = 0.4620213627675807'''
 
         
     model = PhysicoModel(EMBEDDING_SIZE, SEQ_MAX_LENGTH, DEVICE, traV_embed_len, traJ_embed_len, trbV_embed_len, trbJ_embed_len, mhc_embed_len, hyperparameters)
@@ -287,6 +290,8 @@ def main():
     )
     
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
+    best_model_path = model_checkpoint.best_model_path
+    print(f"Best model saved at {best_model_path}")
     # Testing
     test_RES = trainer.test(model, dataloaders=test_dataloader)
     print(f"test_RES: {test_RES}")

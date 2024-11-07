@@ -19,7 +19,7 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "BetaVanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 256
+BATCH_SIZE = 128 #256
 EPOCHS = 275
 # IMPORTANT: keep NUM_WORKERS = 0!
 NUM_WORKERS = 0
@@ -33,11 +33,11 @@ DEVICE = (
     else "cpu"
 )
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-import torch
-print(torch.cuda.is_available())  # Sollte True zurückgeben
-print(torch.version.cuda)
+#import torch
+#print(torch.cuda.is_available())  # Sollte True zurückgeben
+#print(torch.version.cuda)
 
 def set_hyperparameters(config):
     hyperparameters = {}
@@ -110,7 +110,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # or gene
+    precision = "gene" # or allele
     embed_base_dir = f"../../data/embeddings/beta/{precision}"
     hyperparameter_tuning_with_WnB = False
 
@@ -120,7 +120,8 @@ def main():
 
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
-    PROJECT_NAME = "dataset-allele" #os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = "dataset-gene" # or allele 
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
@@ -141,6 +142,7 @@ def main():
     df_test = pd.read_csv(test_file_path, sep="\t")
     df_val = pd.read_csv(val_file_path, sep="\t")
     df_full = pd.concat([df_train, df_test, df_val])
+    print(df_train.head())
     
     trbV_dict = column_to_dictionray(df_full, "TRBV")
     trbJ_dict = column_to_dictionray(df_full, "TRBJ")
@@ -150,11 +152,14 @@ def main():
     trbJ_embed_len = get_embed_len(df_full, "TRBJ")
     mhc_embed_len = get_embed_len(df_full, "MHC")
 
-
+    print("erster Stopp")
     train_dataset = BetaVanilla(train_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
+    print("Train dataset")
     test_dataset = BetaVanilla(test_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
+    print("Test dataset")
     val_dataset = BetaVanilla(val_file_path, embed_base_dir, trbV_dict, trbJ_dict, mhc_dict)
-
+    print("validation dataset")
+    print("zweiter Stopp")
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
 
@@ -197,14 +202,13 @@ def main():
         hyperparameters = set_hyperparameters(config)  # hyperparameter tuning with Weight&Biases sweeps
     else:
         hyperparameters = {}
-        hyperparameters["optimizer"] = "adam"
+        hyperparameters["optimizer"] = "sgd" #adam
         hyperparameters["learning_rate"] = 5e-3
         hyperparameters["weight_decay"] = 0.075
         hyperparameters["dropout_attention"] = 0.3
         hyperparameters["dropout_linear"] = 0.45
         
     model = BetaVanillaModel(EMBEDDING_SIZE, SEQ_MAX_LENGTH, DEVICE, trbV_embed_len, trbJ_embed_len, mhc_embed_len, hyperparameters)
-    model = model.to(DEVICE)  # Move model to GPU
     # ---------------------------------------------------------------------------------
     # training
     # ---------------------------------------------------------------------------------
@@ -213,7 +217,7 @@ def main():
     # This logs gradients
     wandb_logger.watch(model)
     tensorboard_logger = TensorBoardLogger("tb_logs", name=f"{MODEL_NAME}")
-
+    print("wandb logger initialisiert")
     # Callbacks
     run_name = wandb.run.name  
     checkpoint_dir = f"checkpoints/{run_name}"
@@ -240,8 +244,8 @@ def main():
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
         callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
-        accelerator="gpu",
-    )
+        accelerator="gpu", precision=16
+    ) # Mixed Precision Training verwenden mit precision=16 (Verringerung GPU Speicher)
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
     best_model_path = model_checkpoint.best_model_path

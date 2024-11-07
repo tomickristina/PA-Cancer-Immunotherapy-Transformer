@@ -73,11 +73,12 @@ if __name__ == "__main__":
     sequences = set(df[args.column_name].to_list())
     processed_sequences = [(sequence, " ".join(list(re.sub(r"[UZOB]", "X", sequence)))) for sequence in sequences]
 
-    batch_size = 128
+    batch_size = 64 #128
     sequence_to_embedding = {}
 
     # Batch processing with a dictionary, using original sequences as keys
     for i in range(0, len(processed_sequences), batch_size):
+        print("Processing Batch: ", i, i+batch_size)
         batch_sequences = processed_sequences[i:i+batch_size]
         batch_embeddings = process_batch(batch_sequences)
         sequence_to_embedding.update(batch_embeddings)

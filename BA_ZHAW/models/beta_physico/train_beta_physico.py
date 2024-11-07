@@ -25,24 +25,14 @@ EPOCHS = 1
 NUM_WORKERS = 0
 
 MODEL_OUT = f"{MODEL_NAME}.pth"
-'''DEVICE = (
+DEVICE = (
     "cuda"
     if torch.cuda.is_available()
     else "mps"
     if torch.backends.mps.is_available()
     else "cpu"
-)'''
+)
 
-import torch
-print(torch.cuda.is_available())  # Sollte True zurückgeben
-print(torch.version.cuda)  # Sollte die richtige CUDA-Version anzeigen
-
-if torch.cuda.is_available():
-    device = torch.device('cuda:0')
-    print("Using GPU: {}".format(torch.cuda.get_device_name(0)))
-else:
-    device = torch.device('cpu')
-    print("Using device: CPU")
 
 def set_hyperparameters(config):
     hyperparameters = {}
@@ -132,10 +122,10 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # or gene
+    precision = "gene" # or gene
     physico_base_dir = f"../../data/physicoProperties"
     embed_base_dir = f"../../data/embeddings/beta/{precision}"
-    hyperparameter_tuning_with_WnB = True
+    hyperparameter_tuning_with_WnB = False
 
     # -----------------------------------------------------------------------------
     # W&B Setup
@@ -143,8 +133,8 @@ def main():
 
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
-    PROJECT_NAME = "dataset-allele" #os.getenv("MAIN_PROJECT_NAME")
-    #print(f"PROJECT_NAME: {PROJECT_NAME}")
+    PROJECT_NAME = "dataset-gene" #os.getenv("MAIN_PROJECT_NAME")
+    print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
 
@@ -180,9 +170,13 @@ def main():
     val_physico_epi = f"{physico_base_dir}/validation_beta_epitope_{precision}_physico.npz"
     val_physico_trb = f"{physico_base_dir}/validation_beta_TRB_{precision}_physico.npz"
 
+    print("erster Stopp")
     train_dataset = BetaPhysico(train_file_path, embed_base_dir, train_physico_epi, train_physico_trb, trbV_dict, trbJ_dict, mhc_dict)
+    print("erster.zweiter Stopp")
     test_dataset = BetaPhysico(test_file_path, embed_base_dir, test_physico_epi, test_physico_trb, trbV_dict, trbJ_dict, mhc_dict)
+    print("erster.dritter Stopp")
     val_dataset = BetaPhysico(val_file_path, embed_base_dir, val_physico_epi, val_physico_trb, trbV_dict, trbJ_dict, mhc_dict)
+    print("zweiter Stopp")
 
     SEQ_MAX_LENGTH = max(train_dataset.get_max_length(), test_dataset.get_max_length(), val_dataset.get_max_length())
     print(f"this is SEQ_MAX_LENGTH: {SEQ_MAX_LENGTH}")
@@ -226,7 +220,7 @@ def main():
         hyperparameters = set_hyperparameters(config)
     else:
         hyperparameters = {}
-        hyperparameters["optimizer"] = "adam"
+        hyperparameters["optimizer"] = "sgd" #adam
         hyperparameters["learning_rate"] = 5e-3
         hyperparameters["weight_decay"] = 0.075
         hyperparameters["dropout_attention"] = 0.3
