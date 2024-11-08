@@ -2,5 +2,12 @@ BA_ZHAW/data/
 BA_ZHAW/data_10x/
 BA_ZHAW/Anaconda3-2023.07-2-Linux-x86_64.sh
 data_10x
+<<<<<<< HEAD
 GNN/models
 GNN/processed_data
+=======
+GNN/models/McPAS
+GNN/models/TEINet
+GNN/models/VDJdb
+GNN/models/pMTnet
+>>>>>>> a7b3dac (gitignore)
