@@ -136,7 +136,7 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
-    PROJECT_NAME = f"dataset-{precision}_10x" # for allele: dataset-allele
+    PROJECT_NAME = f"dataset-{precision}_10x" # _10x für 10x datensatz
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
@@ -157,6 +157,9 @@ def main():
     df_test = pd.read_csv(test_file_path, sep="\t")
     df_val = pd.read_csv(val_file_path, sep="\t")
     df_full = pd.concat([df_train, df_test, df_val])
+    print(df_train.head())
+    print(df_test.head())
+    print(df_val.head())
     
     traV_dict = column_to_dictionray(df_full, "TRAV")
     traJ_dict = column_to_dictionray(df_full, "TRAJ")

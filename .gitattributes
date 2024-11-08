@@ -1,0 +1,5 @@
+*.npz !text !filter !merge !diff
+*.csv !text !filter !merge !diff
+*.tsv !text !filter !merge !diff
+*.pkl !text !filter !merge !diff
+*.pth !text !filter !merge !diff
