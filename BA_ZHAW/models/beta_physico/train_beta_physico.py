@@ -133,7 +133,7 @@ def main():
 
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
-    PROJECT_NAME = "dataset-gene" #os.getenv("MAIN_PROJECT_NAME")
+    PROJECT_NAME = f"dataset-{precision}" #os.getenv("MAIN_PROJECT_NAME")
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
