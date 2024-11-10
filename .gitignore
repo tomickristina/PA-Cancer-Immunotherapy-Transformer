@@ -2,6 +2,7 @@ BA_ZHAW/data/
 BA_ZHAW/data_10x/
 BA_ZHAW/Anaconda3-2023.07-2-Linux-x86_64.sh
 data_10x
+GNN/models/IEDB/IEDB_embeddings.pkl
 GNN/models
 GNN/processed_data
 GNN/models/McPAS
