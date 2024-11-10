@@ -126,7 +126,7 @@ def get_embed_len(df, column_name):
 
 def main():
     precision = "allele" # or allele
-    embed_base_dir = f"../../data_10x/embeddings/paired/{precision}" #data_10x für 10x
+    embed_base_dir = f"../../data/embeddings/paired/{precision}" #data_10x für 10x
     hyperparameter_tuning_with_WnB = False
 
     # -----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
-    PROJECT_NAME = f"dataset-{precision}_10x" # _10x für 10x datensatz
+    PROJECT_NAME = f"dataset-{precision}" # _10x für 10x datensatz
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
