@@ -10,4 +10,7 @@ GNN/models/TEINet
 GNN/models/VDJdb
 GNN/models/pMTnet
 GNN/models/*.pkl
+*.pth
+*.tsv
+*.csv
 
