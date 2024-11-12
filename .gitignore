@@ -25,3 +25,13 @@ BA_ZHAW/models
 GNN
 
 
+
+
+
+
+
+
+
+*.tsv
+*.csv
+
