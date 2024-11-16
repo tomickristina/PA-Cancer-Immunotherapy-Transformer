@@ -25,6 +25,15 @@ BA_ZHAW/models
 GNN
 
 
+# Ignore Python tarball
+BA_ZHAW/Python-3.11.4.tgz
+
+# Ignore extracted Python directory
+BA_ZHAW/Python-3.11.4/
+
+# Ignore requirement files
+BA_ZHAW/requirements_server1.txt
+BA_ZHAW/requirements_server1_clean.txt
 
 
 
@@ -32,6 +41,6 @@ GNN
 
 
 
-*.tsv
-*.csv
+
+
 
