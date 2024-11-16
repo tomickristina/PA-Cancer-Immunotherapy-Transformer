@@ -7,7 +7,7 @@ import time
 
 
 # %%
-general_protein_df = pd.read_csv("../data/UniProt/generalProteinBinding.tsv", sep="\t")
+general_protein_df = pd.read_csv("../data_10x/UniProt/generalProteinBinding.tsv", sep="\t")
 
 
 # %%
@@ -60,7 +60,7 @@ print(sequence)
 proteins = []
 
 # %%
-to_path = "../data/GeneralProteinBinding/"
+to_path = "../data_10x/GeneralProteinBinding/"
 file_name = "general_proteins_23_04_24.tsv"
 full_path = to_path + file_name
 
