@@ -21,8 +21,8 @@ BA_ZHAW/data/physicoProperties
 BA_ZHAW/data/plain_data
 BA_ZHAW/data/plain_datasets
 BA_ZHAW/data/splitted_datasets
-BA_ZHAW/models
 GNN
+
 
 
 # Ignore Python tarball
