@@ -126,9 +126,7 @@ def get_embed_len(df, column_name):
 
 def main():
     precision = "allele" # "gene"
-    #embed_base_dir = f"../../data_10x/embeddings/paired/{precision}"
-    embed_base_dir = f"../../../../BA/BA_ZHAW/data/embeddings/paired/{precision}"
-
+    embed_base_dir = f"../../data_10x/embeddings/paired/{precision}"
     hyperparameter_tuning_with_WnB = False
 
     # -----------------------------------------------------------------------------
@@ -138,7 +136,7 @@ def main():
     experiment_name = f"Experiment - {MODEL_NAME}"
     load_dotenv()
     PROJECT_NAME = os.getenv("MAIN_PROJECT_NAME")
-    PROJECT_NAME = f'dataset-{precision}' # for 10x: 'dataset-{precision}_10x
+    PROJECT_NAME = f'dataset-{precision}_10x' 
     print(f"PROJECT_NAME: {PROJECT_NAME}")
     run = wandb.init(project=PROJECT_NAME, job_type=f"{experiment_name}", entity="pa_cancerimmunotherapy")
     config = wandb.config
@@ -208,7 +206,7 @@ def main():
     # For reproducability
     generator = torch.Generator().manual_seed(42)
     train_sampler = RandomSampler(train_dataset, generator=generator)
-    val_sampler = RandomSampler(val_dataset, generator=generator) #RandomSampler
+    val_sampler = RandomSampler(val_dataset, generator=generator) 
     test_sampler = SequentialSampler(test_dataset)
 
     train_dataloader = DataLoader(
