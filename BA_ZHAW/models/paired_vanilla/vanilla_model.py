@@ -5,6 +5,9 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
+from sklearn.metrics import precision_score, confusion_matrix
+import wandb
+
 
 
 class TransformerBlock(nn.Module):
@@ -378,6 +381,15 @@ class VanillaModel(pl.LightningModule):
         self.log("ROCAUC_Val", self.auroc(prediction, label), on_epoch=True, prog_bar=True, batch_size=len(batch))
         self.log("AP_Val", self.avg_precision(prediction, label.to(torch.long)), on_epoch=True, prog_bar=True, batch_size=len(batch))
 
+        predicted_classes = (prediction > 0.5).int()
+        label_classes = label.int()
+        
+        if not hasattr(self, "val_predictions"):
+            self.val_predictions = []
+            self.val_labels = []
+        self.val_predictions.append(predicted_classes.cpu())
+        self.val_labels.append(label_classes.cpu())
+
         return val_loss
     
     
@@ -396,3 +408,60 @@ class VanillaModel(pl.LightningModule):
             print("OPTIMIZER NOT FOUND")
         
         return optimizer
+
+
+    def log_validation_metrics(self, outputs):
+        # Sammle alle Vorhersagen und Labels
+        all_preds = torch.cat([torch.sigmoid(output).cpu() > 0.5 for output in outputs]).int().numpy()
+        all_labels = torch.cat([output["labels"].cpu() for output in outputs]).int().numpy()
+    
+        # Berechne Precision
+        precision = precision_score(all_labels, all_preds, zero_division=0)
+    
+        # Berechne Confusion Matrix
+        conf_matrix = confusion_matrix(all_labels, all_preds)
+    
+        # W&B Logging
+        wandb.log({
+            "val_precision": precision,
+            "val_confusion_matrix": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=all_labels,
+                preds=all_preds,
+                class_names=["Not Binding", "Binding"]
+            ),
+        })
+    
+        # Precision zur Progressbar hinzufügen
+        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
+
+
+    def on_validation_epoch_end(self):
+
+        # Zusammenführen aller gesammelten Predictions und Labels
+        all_predictions = torch.cat(self.val_predictions).numpy()
+        all_labels = torch.cat(self.val_labels).numpy()
+    
+        # Berechnung von Precision und Confusion Matrix
+        precision = precision_score(all_labels, all_predictions, zero_division=0)
+        conf_matrix = confusion_matrix(all_labels, all_predictions)
+    
+        # Logging in W&B
+        wandb.log({
+            "val_precision": precision,
+            "val_confusion_matrix": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=all_labels,
+                preds=all_predictions,
+                class_names=["Not Binding", "Binding"]
+            ),
+        })
+    
+        # Log Precision separat
+        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
+    
+        # Cleanup for next epoch
+        self.val_predictions.clear()
+        self.val_labels.clear()
+
+

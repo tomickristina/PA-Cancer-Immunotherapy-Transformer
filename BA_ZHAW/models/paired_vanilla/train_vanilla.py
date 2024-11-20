@@ -10,6 +10,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from vanilla_model import VanillaModel
 from dataclass_paired_vanilla import PairedVanilla 
 from dotenv import load_dotenv
+from sklearn.metrics import precision_score, confusion_matrix
 
 
 torch.manual_seed(42)
