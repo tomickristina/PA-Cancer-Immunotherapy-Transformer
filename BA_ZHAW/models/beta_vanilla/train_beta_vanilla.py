@@ -244,7 +244,7 @@ def main():
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
         callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
-        accelerator="gpu", precision=16
+        accelerator="gpu"
     ) # Mixed Precision Training verwenden mit precision=16 (Verringerung GPU Speicher)
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)

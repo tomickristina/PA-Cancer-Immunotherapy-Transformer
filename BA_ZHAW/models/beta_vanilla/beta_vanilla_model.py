@@ -5,6 +5,8 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
+from sklearn.metrics import precision_score, confusion_matrix
+import wandb
 
 
 class TransformerBlock(nn.Module):
@@ -263,6 +265,16 @@ class BetaVanillaModel(pl.LightningModule):
         self.log("val_loss", val_loss, batch_size=len(batch))
         
         prediction = torch.sigmoid(output)
+        predicted_classes = (prediction > 0.5).int()
+        label_classes = label.int()
+
+        # Speichere Vorhersagen und Labels
+        if not hasattr(self, "val_predictions"):
+            self.val_predictions = []
+            self.val_labels = []
+        self.val_predictions.append(predicted_classes.cpu())
+        self.val_labels.append(label_classes.cpu())
+        
         self.log("ROCAUC_Val", self.auroc(prediction, label), on_epoch=True, prog_bar=True, batch_size=len(batch))
         self.log("AP_Val", self.avg_precision(prediction, label.to(torch.long)), on_epoch=True, prog_bar=True, batch_size=len(batch))
 
@@ -284,3 +296,32 @@ class BetaVanillaModel(pl.LightningModule):
             print("OPTIMIZER NOT FOUND")
         
         return optimizer
+
+
+    def on_validation_epoch_end(self):
+        # Sammle Vorhersagen und Labels
+        all_predictions = torch.cat(self.val_predictions).numpy()
+        all_labels = torch.cat(self.val_labels).numpy()
+
+        # Berechne Precision
+        precision = precision_score(all_labels, all_predictions, zero_division=0)
+
+        # Berechne Confusion Matrix
+        conf_matrix = confusion_matrix(all_labels, all_predictions)
+
+        # Logge Precision
+        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
+
+        # Logge Confusion Matrix in W&B
+        wandb.log({
+            "val_confusion_matrix": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=all_labels,
+                preds=all_predictions,
+                class_names=["Not Binding", "Binding"]
+            )
+        })
+
+        # Cleanup
+        self.val_predictions.clear()
+        self.val_labels.clear()

@@ -381,11 +381,11 @@ class VanillaModel(pl.LightningModule):
         self.log("ROCAUC_Val", self.auroc(prediction, label), on_epoch=True, prog_bar=True, batch_size=len(batch))
         self.log("AP_Val", self.avg_precision(prediction, label.to(torch.long)), on_epoch=True, prog_bar=True, batch_size=len(batch))
 
-        print("Prediction: ", prediction)
+        #print("Prediction: ", prediction)
         predicted_classes = (prediction > 0.5).int()
-        print("Prediction Classes: ", predicted_classes)
+        #print("Prediction Classes: ", predicted_classes)
         label_classes = label.int()
-        print("Label Classes: ", label_classes)
+        #print("Label Classes: ", label_classes)
         
         if not hasattr(self, "val_predictions"):
             self.val_predictions = []
@@ -412,6 +412,30 @@ class VanillaModel(pl.LightningModule):
         
         return optimizer
 
+    def log_validation_metrics(self, outputs):
+        # Sammle alle Vorhersagen und Labels
+        all_preds = torch.cat([torch.sigmoid(output).cpu() > 0.5 for output in outputs]).int().numpy()
+        all_labels = torch.cat([output["labels"].cpu() for output in outputs]).int().numpy()
+    
+        # Berechne Precision
+        precision = precision_score(all_labels, all_preds, zero_division=0)
+    
+        # Berechne Confusion Matrix
+        conf_matrix = confusion_matrix(all_labels, all_preds)
+    
+        # W&B Logging
+        wandb.log({
+            "val_precision": precision,
+            "val_confusion_matrix": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=all_labels,
+                preds=all_preds,
+                class_names=["Not Binding", "Binding"]
+            ),
+        })
+    
+        # Precision zur Progressbar hinzufügen
+        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
 
 
     def on_validation_epoch_end(self):
