@@ -19,7 +19,7 @@ torch.manual_seed(42)
 # ---------------------------------------------------------------------------------
 MODEL_NAME = "BetaVanillaModel"
 EMBEDDING_SIZE = 1024
-BATCH_SIZE = 128 #256
+BATCH_SIZE = 64 #128 #256
 EPOCHS = 275
 # IMPORTANT: keep NUM_WORKERS = 0!
 NUM_WORKERS = 0
