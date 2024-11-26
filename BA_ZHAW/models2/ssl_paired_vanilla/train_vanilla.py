@@ -127,6 +127,8 @@ def get_embed_len(df, column_name):
 
 def main():
     precision = "allele" # "allele or gene"
+    category = "paired"  # Beispiel für den ersten Lauf: category kann auch "beta" sein
+    
     #embed_base_dir = f"../../data_10x/embeddings/paired/{precision}" # 10x
     embed_base_dir = f"../../data/embeddings/paired/{precision}" # BA
     hyperparameter_tuning_with_WnB = False
@@ -212,6 +214,18 @@ def main():
     val_sampler = RandomSampler(val_dataset, generator=generator) 
     test_sampler = SequentialSampler(test_dataset)
 
+    # Dataset für das Vortraining
+    train_dataset_pretrain = PairedVanilla(train_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict, pretrain=True)
+    train_dataloader_pretrain = DataLoader(
+        train_dataset_pretrain,
+        batch_size=BATCH_SIZE,
+        sampler=train_sampler,  # Verwende den selben Sampler, da die Stichprobenmethode sich nicht ändern muss
+        num_workers=NUM_WORKERS,
+        collate_fn=lambda batch: batch  # Keine spezielle Collate-Funktion benötigt
+    )
+    
+    # Dataset und Dataloader für das Klassifikationstraining
+    train_dataset_train = PairedVanilla(train_file_path, embed_base_dir, traV_dict, traJ_dict, trbV_dict, trbJ_dict, mhc_dict, pretrain=False)
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=BATCH_SIZE,
@@ -280,15 +294,34 @@ def main():
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
     swa = StochasticWeightAveraging(swa_lrs=hyperparameters["learning_rate"]*0.1, swa_epoch_start=45)
 
-    # Training
+    # ---------------------------------------------------------------------------------
+    # Vortraining
+    # ---------------------------------------------------------------------------------
+    print("Starte Vortraining für physikochemische Merkmale...")
+    model.set_training_stage('pretrain')
+    print(f"Trainingsphase gesetzt auf: {model.training_stage}")
+
     trainer = pl.Trainer(
         max_epochs=EPOCHS,
         logger=[wandb_logger, tensorboard_logger],
-        callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],  
+        callbacks=[model_checkpoint, early_stopping, lr_monitor, swa],
         accelerator="gpu"
-    ) # add mixed precision
+    )
 
+    
+    trainer.fit(model, train_dataloaders=train_dataloader_pretrain, val_dataloaders=val_dataloader)
+    # ---------------------------------------------------------------------------------
+    # Klassifikations-Training
+    # ---------------------------------------------------------------------------------
+    print("Wechsel in Klassifikations-Training...")
+    model.set_training_stage('train')
+    print(f"Trainingsphase gesetzt auf: {model.training_stage}")
+    
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
+
+    # ---------------------------------------------------------------------------------
+    # Testing und Validierung
+    # ---------------------------------------------------------------------------------
     best_model_path = model_checkpoint.best_model_path
     print(f"Best model saved at {best_model_path}")
     # Testing
@@ -296,6 +329,7 @@ def main():
     print(f"test_RES: {test_RES}")
     validate_RES = trainer.validate(model, dataloaders=val_dataloader)
     print(f"validate_RES: {validate_RES}")
+    
     # Close W&B run
     wandb_logger.experiment.finish()
     # ---------------------------------------------------------------------------------

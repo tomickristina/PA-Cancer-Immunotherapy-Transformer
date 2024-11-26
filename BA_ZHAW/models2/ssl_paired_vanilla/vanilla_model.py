@@ -135,97 +135,85 @@ class VanillaModel(pl.LightningModule):
         self.n_hidden = int(1.5*self.transformer_in)
         self.multihead_attn_global = TransformerBlock(self.transformer_in, self.num_heads, False, self.n_hidden, self.hyperparameters["dropout_attention"])
 
-        # Define Classifier
-        # flattened output of the transformer:
-        # 2*(2*(self.max_seq_length+1)+3)*self.embed_dim
+
+        # Pretraining Regressor (wird dynamisch dimensioniert)
+        self.physicochemical_regressor = nn.Linear(303, 101)  # Input: 3 sequences with 101 features each, Output: 101 features
+
+
+        # Classifier für die Klassifikation
         self.classifier_hidden = 64
-        self.classifier_in = 2*(2*(max_seq_length)+3)*embed_dim
+        self.classifier_in = 2 * (2 * max_seq_length + 3) * embed_dim
         self.classifier = Classifier(self.classifier_in, self.classifier_hidden, self.hyperparameters["dropout_linear"])
+
+        self.training_stage = 'pretrain'
+
+    def forward(self, physicochemical_features=None, epitope=None, tra_cdr3=None, trb_cdr3=None, v_alpha=None, j_alpha=None, v_beta=None, j_beta=None, mhc=None):
+        if self.training_stage == 'pretrain':
+            # Nur physikochemische Merkmale verwenden
+            return self.physicochemical_regressor(physicochemical_features)
+        else:
+            # Das Klassifikationstraining verwendet Embeddings und Transformer
+            tra_epitope = torch.cat([tra_cdr3, epitope], dim=1)
+            trb_epitope = torch.cat([trb_cdr3, epitope], dim=1)
+            
+            tra_v_embed = self.traV_embed(v_alpha.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
+            trb_v_embed = self.trbV_embed(v_beta.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
+            trb_j_embed = self.trbJ_embed(j_beta.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
+            tra_j_embed = self.traJ_embed(j_alpha.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
+            mhc_embed = self.mhc_embed(mhc).to(self.device_).unsqueeze(0).permute(1, 0, 2)
     
-
-    def forward(self, epitope, tra_cdr3, trb_cdr3, v_alpha, j_alpha, v_beta, j_beta, mhc):
-        '''
-        print(f"epitope.shape: {epitope.shape}")
-        print(f"tra_cdr3.shape: {tra_cdr3.shape}")
-        print(f"trb_cdr3.shape: {trb_cdr3.shape}")
-        
-        print(f"len(v_alpha): {len(v_alpha)}")
-        print(f"len(j_alpha): {len(j_alpha)}")
-        print(f"len(v_beta): {len(v_beta)}")
-        print(f"len(j_beta): {len(j_beta)}")
-        print(f"len(mhc): {len(mhc)}")
-        print(f"type(v_alpha): {type(v_alpha)}")
-        print(f"type(j_alpha): {type(j_alpha)}")
-        print(f"type(v_beta): {type(v_beta)}")
-        print(f"type(j_beta): {type(j_beta)}")
-        print(f"type(mhc): {type(mhc)}")
-        '''
-
-        tra_epitope = torch.cat([tra_cdr3, epitope], dim=1)
-        trb_epitope = torch.cat([trb_cdr3, epitope], dim=1)
-        # print(f"tra_epitope.shape: {tra_epitope.shape}")
-        # print(f"trb_epitope.shape: {trb_epitope.shape}")
-
-        '''
-        print(f"torch.tensor(v_alpha).to(self.device_): {torch.tensor(v_alpha).to(self.device_)}")
-        print(f"torch.tensor(v_alpha).dtype: {torch.tensor(v_alpha).dtype}")
-        print(f"torch.tensor(v_alpha)[0].dtype: {torch.tensor(v_alpha).to(torch.long).dtype}")
-        print(f"torch.tensor(v_alpha).to(torch.long).to(self.device_): {torch.tensor(v_alpha).to(torch.long).to(self.device_).device}")
-        '''
-        
-        tra_v_embed = self.traV_embed(v_alpha.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
-        trb_v_embed = self.trbV_embed(v_beta.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
-        trb_j_embed = self.trbJ_embed(j_beta.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
-        tra_j_embed = self.traJ_embed(j_alpha.to(self.device_)).unsqueeze(0).permute(1, 0, 2)
-        mhc_embed = self.mhc_embed(mhc).to(self.device_).unsqueeze(0).permute(1, 0, 2)
-
-
-        '''
-        print(f"tra_v_embed: {tra_v_embed.shape}")
-        print(f"tra_v_embed.requires_grad: {tra_v_embed.requires_grad}")
-        print(f"tra_j_embed: {tra_j_embed.shape}")
-        print(f"trb_v_embed: {trb_v_embed.shape}")
-        print(f"trb_j_embed: {trb_j_embed.shape}")
-        print(f"mhc_embed: {mhc_embed.shape}")
-        '''
-
-        tra_epitope_vj_mhc = torch.cat([tra_epitope, tra_v_embed, tra_j_embed, mhc_embed], dim=1)
-        trb_epitope_vj_mhc = torch.cat([trb_epitope, trb_v_embed, trb_j_embed, mhc_embed], dim=1)
-        # print(f"tra_epitope_vj_mhc.shape: {tra_epitope_vj_mhc.shape}")
-        # print(f"trb_epitope_vj_mhc.shape: {trb_epitope_vj_mhc.shape}")
-
-        tra_epitope_vj_mhc_attention = self.multihead_attn_global(tra_epitope_vj_mhc)
-        trb_epitope_vj_mhc_attention = self.multihead_attn_global(trb_epitope_vj_mhc) 
-        # print(f"tra_epitope_vj_mhc_attention.shape: {tra_epitope_vj_mhc_attention.shape}") 
-        # print(f"trb_epitope_vj_mhc_attention.shape: {trb_epitope_vj_mhc_attention.shape}")       
-
-        concat_both_chains = torch.cat([tra_epitope_vj_mhc_attention, trb_epitope_vj_mhc_attention], dim=1)
-        # print(f"concat_both_chains.shape: {concat_both_chains.shape}")
-        concat_both_chains_flatten = concat_both_chains.view(concat_both_chains.size(0), -1)
-        # print(f"concat_both_chains_flatten.shape: {concat_both_chains_flatten.shape}")
-        
-        logits = self.classifier(concat_both_chains_flatten)
-        # print(f"logits: {logits}")
-        return logits
+            tra_epitope_vj_mhc = torch.cat([tra_epitope, tra_v_embed, tra_j_embed, mhc_embed], dim=1)
+            trb_epitope_vj_mhc = torch.cat([trb_epitope, trb_v_embed, trb_j_embed, mhc_embed], dim=1)
     
+            tra_epitope_vj_mhc_attention = self.multihead_attn_global(tra_epitope_vj_mhc)
+            trb_epitope_vj_mhc_attention = self.multihead_attn_global(trb_epitope_vj_mhc)
+    
+            concat_both_chains = torch.cat([tra_epitope_vj_mhc_attention, trb_epitope_vj_mhc_attention], dim=1)
+            concat_both_chains_flatten = concat_both_chains.view(concat_both_chains.size(0), -1)
+    
+            logits = self.classifier(concat_both_chains_flatten)
+            return logits
+
+        
+
+    def set_training_stage(self, stage):
+        """Sets the training stage of the model, either 'pretrain' or 'train'."""
+        if stage not in ['pretrain', 'train']:
+            raise ValueError("Invalid training stage. Must be 'pretrain' or 'train'.")
+        self.training_stage = stage
+        
+        if stage == 'pretrain' and self.physicochemical_regressor is None:
+            # Initialisiere den Regressor nur, wenn er im Vortraining gebraucht wird und noch nicht existiert
+            self.physicochemical_regressor = nn.Linear(self.classifier_in, 101)  # Beispielhafte Dimensionen
+
 
     def training_step(self, batch, batch_idx):
-        epitope_embedding = batch["epitope_embedding"]
-        tra_cdr3_embedding = batch["tra_cdr3_embedding"]
-        trb_cdr3_embedding = batch["trb_cdr3_embedding"]
-        v_alpha = batch["v_alpha"]
-        j_alpha = batch["j_alpha"]
-        v_beta = batch["v_beta"]
-        j_beta = batch["j_beta"]
-        mhc = batch["mhc"]
-        label = batch["label"]
-        
-        output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze()
-
-        # print(f"this is y in training_step: {y}\n\n\n")
-        loss = F.binary_cross_entropy_with_logits(output, label)
-        self.log("train_loss", loss, on_step=True, prog_bar=True, batch_size=len(batch))
+        if self.training_stage == 'pretrain':
+            physicochemical_features = batch["physicochemical_features"]
+            print("Vortraining: Berechnung des physikochemischen Vorhersageverlusts")
+            predictions = self(physicochemical_features=physicochemical_features)
+            # Beispiel: Der Verlust könnte z.B. mit einem MSE-Loss berechnet werden, um die rekonstruierten physikochemischen Eigenschaften zu bewerten.
+            # Hier könnte ein sinnvoller Vergleichswert eingefügt werden, ggf. aus bekannten Normwerten oder vorgegebenen Zielwerten.
+            loss = F.mse_loss(predictions, physicochemical_features)
+            self.log("pretrain_loss", loss, on_step=True, prog_bar=True, batch_size=len(batch))
+        else:
+            # Klassifikations-Training
+            label = batch["label"]
+            logits = self(
+                epitope=batch["epitope_embedding"],
+                tra_cdr3=batch["tra_cdr3_embedding"],
+                trb_cdr3=batch["trb_cdr3_embedding"],
+                v_alpha=batch["v_alpha"],
+                j_alpha=batch["j_alpha"],
+                v_beta=batch["v_beta"],
+                j_beta=batch["j_beta"],
+                mhc=batch["mhc"]
+            ).squeeze()
+            loss = F.binary_cross_entropy_with_logits(logits, label)
+            self.log("train_loss", loss, on_step=True, prog_bar=True, batch_size=len(batch))
+    
         return loss
+
 
 
     def test_step(self, batch, batch_idx):
@@ -369,30 +357,27 @@ class VanillaModel(pl.LightningModule):
         mhc = batch["mhc"]
         label = batch["label"]
         
-        output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze(1)
-        
+        # Verwende den Klassifikator (logits) im Validierungsmodus
+        self.set_training_stage('train')  # Stelle sicher, dass der Klassifikationsmodus verwendet wird.
+        output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze()
+    
+        # Berechne die Verlustfunktion
         val_loss = F.binary_cross_entropy_with_logits(output, label)
         self.log("val_loss", val_loss, batch_size=len(batch))
-        
+    
         prediction = torch.sigmoid(output)
-        # print(f"val: predictions: {predictions}")
-        # print(f"val: predictions.shape: {predictions.shape}")
-        # print(f"type(predictions) in validation: {type(predictions[0])}")
         self.log("ROCAUC_Val", self.auroc(prediction, label), on_epoch=True, prog_bar=True, batch_size=len(batch))
         self.log("AP_Val", self.avg_precision(prediction, label.to(torch.long)), on_epoch=True, prog_bar=True, batch_size=len(batch))
-
-        #print("Prediction: ", prediction)
+    
         predicted_classes = (prediction > 0.5).int()
-        #print("Prediction Classes: ", predicted_classes)
         label_classes = label.int()
-        #print("Label Classes: ", label_classes)
-        
+    
         if not hasattr(self, "val_predictions"):
             self.val_predictions = []
             self.val_labels = []
         self.val_predictions.append(predicted_classes.cpu())
         self.val_labels.append(label_classes.cpu())
-
+    
         return val_loss
     
     
