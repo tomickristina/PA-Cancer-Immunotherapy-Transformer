@@ -57,6 +57,7 @@ class PadCollate:
         mhc = []
         task = []
         labels = []
+        source = []
 
         for item in batch:
             epitope_embeddings.append(item["epitope_embedding"])
@@ -72,6 +73,7 @@ class PadCollate:
             mhc.append(item["mhc"])
             task.append(item["task"])
             labels.append(item["label"])
+            source.append(item["source"])
 
         max_length = self.seq_max_length
 
@@ -106,7 +108,8 @@ class PadCollate:
             "j_beta": j_beta,
             "mhc": mhc,
             "task": task,
-            "label": labels
+            "label": labels,
+            "source": source
         }
 
 
@@ -128,7 +131,7 @@ def get_embed_len(df, column_name):
 def main():
     precision = "allele" # "allele or gene"
     embed_base_dir = f"../../data_10x/embeddings/paired/{precision}"
-    hyperparameter_tuning_with_WnB = True
+    hyperparameter_tuning_with_WnB = False
 
     # -----------------------------------------------------------------------------
     # W&B Setup

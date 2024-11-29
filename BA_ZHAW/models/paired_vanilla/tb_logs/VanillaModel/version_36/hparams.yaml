@@ -1,0 +1,14 @@
+device_: cuda
+embed_dim: 1024
+hyperparameters:
+  dropout_attention: 0.14615732448615745
+  dropout_linear: 0.4806173000098172
+  learning_rate: 0.06947887729033435
+  optimizer: adam
+  weight_decay: 0.003184259693944814
+max_seq_length: 30
+mhc_embed_len: 79
+traJ_embed_len: 113
+traV_embed_len: 118
+trbJ_embed_len: 29
+trbV_embed_len: 132
