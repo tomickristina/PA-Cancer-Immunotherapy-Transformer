@@ -541,6 +541,31 @@ class VanillaModel(pl.LightningModule):
             wandb.log({f"PR Curve Chart - {source}": plt})
             plt.close()
 
+
+        for source in ["10X", "BA"]:
+            source_mask = (val_sources == source)
+            
+            if np.sum(source_mask) == 0:
+                continue  # Skip if no data for this source
+            
+            source_labels = all_labels[source_mask]
+            source_predictions = all_predictions[source_mask]
+        
+            # Berechnung von Precision und Recall
+            precision, recall, _ = precision_recall_curve(source_labels, source_predictions)
+        
+            # Plot erstellen
+            plt.figure(figsize=(8, 6))
+            plt.plot(recall, precision, label=f"PR Curve - {source}")
+            plt.xlabel("Recall")
+            plt.ylabel("Precision")
+            plt.title(f"Precision-Recall Curve for {source}")
+            plt.legend()
+            
+            # Loggen des Plots zu WandB
+            wandb.log({f"PR Curve Chart - {source}": plt})
+            plt.close()
+
         positive_preds = all_predictions[all_labels == 1]
         negative_preds = all_predictions[all_labels == 0]
     
