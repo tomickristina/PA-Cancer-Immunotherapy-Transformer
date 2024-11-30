@@ -5,8 +5,10 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
-from sklearn.metrics import recall_score, precision_score, confusion_matrix
+from sklearn.metrics import recall_score, precision_score, confusion_matrix, precision_recall_curve
 import wandb
+from torch.utils.data import WeightedRandomSampler
+import matplotlib.pyplot as plt
 
 
 
@@ -209,9 +211,9 @@ class VanillaModel(pl.LightningModule):
         logits = self.classifier(concat_both_chains_flatten)
         # print(f"logits: {logits}")
         return logits
-    
+        
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx):        
         epitope_embedding = batch["epitope_embedding"]
         tra_cdr3_embedding = batch["tra_cdr3_embedding"]
         trb_cdr3_embedding = batch["trb_cdr3_embedding"]
@@ -223,9 +225,9 @@ class VanillaModel(pl.LightningModule):
         label = batch["label"]
         
         output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze()
-
-        # print(f"this is y in training_step: {y}\n\n\n")
-        loss = F.binary_cross_entropy_with_logits(output, label)
+        
+        #pos_weight = torch.tensor([5.0], device=self.device_)
+        loss = F.binary_cross_entropy_with_logits(output, label) #pos_weight=pos_weight
         self.log("train_loss", loss, on_step=True, prog_bar=True, batch_size=len(batch))
         return loss
 
@@ -269,10 +271,6 @@ class VanillaModel(pl.LightningModule):
         test_labels = torch.stack(self.test_labels)
         # print(f"on_test_epoch_end, test_labels: {test_labels}")
         test_tasks = self.test_tasks
-
-        print(f"len(self.test_predictions): {len(self.test_predictions)}")
-        print(f"len(self.test_labels): {len(self.test_labels)}")
-        print(f"len(self.test_tasks): {len(self.test_tasks)}")
 
         tpp_1 = []
         tpp_2 = []
@@ -357,8 +355,62 @@ class VanillaModel(pl.LightningModule):
 
         df = pd.DataFrame(data)
         # df.to_csv("./reclassifed_paired_gene_df.tsv", sep="\t")
+   
+        # Quelleninformationen verarbeiten
+        if hasattr(self, "sources") and len(self.sources) == len(test_labels):
+            test_sources = np.array(self.sources)
+        else:
+            test_sources = np.array(["Unknown"] * len(test_labels))
+            print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
+        
+        # Filtere die negativen Samples für 10X und BA
+        is_negative = (test_labels == 0)
+        is_10x = (test_sources == "10X")
+        is_ba = (test_sources == "BA")
     
-        # Cleanup for next epoch
+        # Berechnung von Precision und Recall für 10X Negative
+        precision_10x, recall_10x = 0, 0
+        if np.sum(is_negative & is_10x) > 0:
+            precision_10x = precision_score(
+                test_labels[is_negative & is_10x],
+                test_predictions[is_negative & is_10x] > 0.5,
+                zero_division=0
+            )
+            recall_10x = recall_score(
+                test_labels[is_negative & is_10x],
+                test_predictions[is_negative & is_10x] > 0.5,
+                zero_division=0
+            )
+    
+        # Berechnung von Precision und Recall für BA Negative
+        precision_ba, recall_ba = 0, 0
+        if np.sum(is_negative & is_ba) > 0:
+            precision_ba = precision_score(
+                test_labels[is_negative & is_ba],
+                test_predictions[is_negative & is_ba] > 0.5,
+                zero_division=0
+            )
+            recall_ba = recall_score(
+                test_labels[is_negative & is_ba],
+                test_predictions[is_negative & is_ba] > 0.5,
+                zero_division=0
+            )
+    
+
+        wandb.log({
+            "Test 10X Negative Precision": precision_10x,
+            "Test 10X Negative Recall": recall_10x,
+            "Test BA Negative Precision": precision_ba,
+            "Test BA Negative Recall": recall_ba,
+        })
+    
+        # Logging für Progressbar
+        self.log("test_10x_negative_precision", precision_10x, on_epoch=True, prog_bar=True)
+        self.log("test_10x_negative_recall", recall_10x, on_epoch=True, prog_bar=True)
+        self.log("test_ba_negative_precision", precision_ba, on_epoch=True, prog_bar=True)
+        self.log("test_ba_negative_recall", recall_ba, on_epoch=True, prog_bar=True)
+    
+        # Cleanup
         self.test_predictions.clear()
         self.test_labels.clear()
         self.sources.clear()
@@ -381,10 +433,12 @@ class VanillaModel(pl.LightningModule):
         if not hasattr(self, "sources"):
             self.sources = []  # Initialisierung, falls noch nicht vorhanden
         self.sources.extend(source)  # Hinzufügen der Quelleninformationen
+
+        #pos_weight = torch.tensor([5.0], device=self.device_)
         
         output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze(1)
         
-        val_loss = F.binary_cross_entropy_with_logits(output, label)
+        val_loss = F.binary_cross_entropy_with_logits(output, label) #pos_weight=pos_weight
         self.log("val_loss", val_loss, batch_size=len(batch))
         
         prediction = torch.sigmoid(output)
@@ -473,8 +527,99 @@ class VanillaModel(pl.LightningModule):
     
         # Log Precision separat
         self.log("val_precision", precision, on_epoch=True, prog_bar=True)
+
     
-        # Cleanup for next epoch
+        # Prüfen, ob Quelleninformationen vorhanden sind
+        if hasattr(self, "sources") and len(self.sources) == len(all_labels):
+            val_sources = np.array(self.sources)
+        else:
+            val_sources = np.array(["Unknown"] * len(all_labels))
+            print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
+        
+        # Filtern der negativen Samples für 10X und BA
+        is_negative = (all_labels == 0)
+        is_10x = (val_sources == "10X")
+        is_ba = (val_sources == "BA")
+        
+        # Berechnung von Precision und Recall für 10X Negative
+        precision_10x, recall_10x = 0, 0
+        if np.sum(is_negative & is_10x) > 0:
+            precision_10x = precision_score(
+                all_labels[is_negative & is_10x],
+                all_predictions[is_negative & is_10x],
+                zero_division=0
+            )
+            recall_10x = recall_score(
+                all_labels[is_negative & is_10x],
+                all_predictions[is_negative & is_10x],
+                zero_division=0
+            )
+        
+        # Berechnung von Precision und Recall für BA Negative
+        precision_ba, recall_ba = 0, 0
+        if np.sum(is_negative & is_ba) > 0:
+            precision_ba = precision_score(
+                all_labels[is_negative & is_ba],
+                all_predictions[is_negative & is_ba],
+                zero_division=0
+            )
+            recall_ba = recall_score(
+                all_labels[is_negative & is_ba],
+                all_predictions[is_negative & is_ba],
+                zero_division=0
+            )
+            
+
+        wandb.log({
+            "Validation 10X Negative Precision": precision_10x,
+            "Validation 10X Negative Recall": recall_10x,
+            "Validation BA Negative Precision": precision_ba,
+            "Validation BA Negative Recall": recall_ba,
+        })
+    
+        # Log Precision separat zur Progressbar
+        self.log("val_10x_negative_precision", precision_10x, on_epoch=True, prog_bar=True)
+        self.log("val_10x_negative_recall", recall_10x, on_epoch=True, prog_bar=True)
+        self.log("val_ba_negative_precision", precision_ba, on_epoch=True, prog_bar=True)
+        self.log("val_ba_negative_recall", recall_ba, on_epoch=True, prog_bar=True)
+
+        positive_preds = all_predictions[all_labels == 1]
+        negative_preds = all_predictions[all_labels == 0]
+    
+        # Histogramm plotten
+        plt.figure(figsize=(10, 6))
+        plt.hist(negative_preds, bins=50, alpha=0.7, label="Negative Predictions")
+        plt.hist(positive_preds, bins=50, alpha=0.7, label="Positive Predictions")
+        plt.xlabel("Sigmoid Output")
+        plt.ylabel("Frequency")
+        plt.title("Prediction Distribution (Validation)")
+        plt.legend()
+        plt.show()
+    
+        # Logging in W&B (optional)
+        wandb.log({"validation_prediction_histogram": plt})
+
+        # Berechnung der Precision-Recall-Kurve und F1-Scores
+        precision, recall, thresholds = precision_recall_curve(all_labels, all_predictions)
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)  # Vermeidung von NaN
+        optimal_threshold = thresholds[np.argmax(f1_scores)]
+        print(f"Optimal Threshold: {optimal_threshold}")
+    
+        # Optional: Schwellenwert in W&B loggen
+        wandb.log({"optimal_threshold": optimal_threshold})
+    
+        # Anwenden der optimalen Schwelle
+        predicted_classes_with_optimal = (all_predictions > optimal_threshold).astype(int)
+        precision_optimal = precision_score(all_labels, predicted_classes_with_optimal, zero_division=0)
+        recall_optimal = recall_score(all_labels, predicted_classes_with_optimal, zero_division=0)
+    
+        print(f"Precision (Optimal Threshold): {precision_optimal}, Recall (Optimal Threshold): {recall_optimal}")
+    
+        # Logging der neuen Precision und Recall
+        self.log("val_precision_optimal", precision_optimal, on_epoch=True, prog_bar=True)
+        self.log("val_recall_optimal", recall_optimal, on_epoch=True, prog_bar=True)
+    
+        # Cleanup für die nächste Epoche
         self.val_predictions.clear()
         self.val_labels.clear()
-
+        self.sources = []
