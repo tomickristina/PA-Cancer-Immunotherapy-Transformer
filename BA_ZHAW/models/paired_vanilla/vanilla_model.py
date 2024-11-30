@@ -357,38 +357,11 @@ class VanillaModel(pl.LightningModule):
 
         df = pd.DataFrame(data)
         # df.to_csv("./reclassifed_paired_gene_df.tsv", sep="\t")
-
+    
+        # Cleanup for next epoch
         self.test_predictions.clear()
         self.test_labels.clear()
-        self.test_tasks.clear()
-
-        # Konvertiere die gesammelten Daten in NumPy-Arrays
-        test_sources = np.array(self.sources)
-        
-        # Filtere negative Samples aus 10X und BA
-        is_negative = (test_labels == 0)
-        is_10x = (test_sources == "10X")
-        is_ba = (test_sources == "BA")
-        
-        # Berechnung für 10X negative Samples
-        precision_10x = precision_score(test_labels[is_negative & is_10x], test_predictions[is_negative & is_10x] > 0.5)
-        recall_10x = recall_score(test_labels[is_negative & is_10x], test_predictions[is_negative & is_10x] > 0.5)
-        
-        # Berechnung für BA negative Samples
-        precision_ba = precision_score(test_labels[is_negative & is_ba], test_predictions[is_negative & is_ba] > 0.5)
-        recall_ba = recall_score(test_labels[is_negative & is_ba], test_predictions[is_negative & is_ba] > 0.5)
-        
-        # Logge die Ergebnisse
-        print(f"10X Negative: Precision={precision_10x}, Recall={recall_10x}")
-        print(f"BA Negative: Precision={precision_ba}, Recall={recall_ba}")
-        
-        wandb.log({
-            "10X Negative Precision": precision_10x,
-            "10X Negative Recall": recall_10x,
-            "BA Negative Precision": precision_ba,
-            "BA Negative Recall": recall_ba,
-        })
-
+        self.sources.clear()
 
 
     def validation_step(self, batch, batch_idx):
@@ -401,6 +374,13 @@ class VanillaModel(pl.LightningModule):
         j_beta = batch["j_beta"]
         mhc = batch["mhc"]
         label = batch["label"]
+
+        source = batch.get("source", ["Unknown"] * len(label))  
+    
+        # Speichere source in der Instanzvariable
+        if not hasattr(self, "sources"):
+            self.sources = []  # Initialisierung, falls noch nicht vorhanden
+        self.sources.extend(source)  # Hinzufügen der Quelleninformationen
         
         output = self(epitope_embedding, tra_cdr3_embedding, trb_cdr3_embedding, v_alpha, j_alpha, v_beta, j_beta, mhc).squeeze(1)
         
@@ -472,7 +452,6 @@ class VanillaModel(pl.LightningModule):
 
 
     def on_validation_epoch_end(self):
-
         # Zusammenführen aller gesammelten Predictions und Labels
         all_predictions = torch.cat(self.val_predictions).numpy()
         all_labels = torch.cat(self.val_labels).numpy()
@@ -498,7 +477,4 @@ class VanillaModel(pl.LightningModule):
         # Cleanup for next epoch
         self.val_predictions.clear()
         self.val_labels.clear()
-
-
-
 
