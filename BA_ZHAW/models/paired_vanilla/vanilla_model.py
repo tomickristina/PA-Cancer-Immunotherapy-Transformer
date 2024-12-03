@@ -362,10 +362,43 @@ class VanillaModel(pl.LightningModule):
             test_sources = np.array(["Unknown"] * len(test_labels))
             print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
         
-        # Filtere die negativen Samples für 10X und BA
-        is_negative = (test_labels == 0)
-        is_10x = (test_sources == "10X")
-        is_ba = (test_sources == "BA")
+        # Filter predictions and labels for negatives and by source
+        #is_negative = (test_labels == 0)
+
+        for source in ["10X", "BA"]:
+            source_mask = (np.array(self.sources) == source)  # Filter für diese Quelle
+            if np.sum(source_mask) == 0:
+                continue  # Überspringen, wenn keine Daten vorhanden sind
+        
+            source_labels = test_labels[source_mask]
+            source_predictions = test_predictions[source_mask]
+        
+            # Umwandlung von Vorhersagen in binäre Werte (Threshold bei 0.5)
+            binary_predictions = (source_predictions >= 0.5).astype(int)
+        
+            # Berechnung von Precision und Recall
+            precision = precision_score(source_labels, binary_predictions, zero_division=0)
+            recall = recall_score(source_labels, binary_predictions, zero_division=0)
+        
+            # Berechnung der Confusion Matrix
+            conf_matrix_source = confusion_matrix(source_labels, binary_predictions, labels=[0, 1])
+        
+            # Extrahieren der True Negatives (TN) und false Negatives (FN)
+            tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
+            fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+
+            # Berechnung der Negative Prediction Rate (NPR)
+            npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0
+            
+            # Logging der NPR in W&B
+            wandb.log({
+                f"Precision ({source})": precision,
+                f"Recall ({source})": recall,
+                f"test_true_negatives_{source}": tn_source,
+                f"test_false_negatives_{source}": fn_source,
+                f"test_negative_prediction_rate_{source}": npr_source
+            })
+
     
         # Cleanup
         self.test_predictions.clear()
@@ -492,79 +525,56 @@ class VanillaModel(pl.LightningModule):
             print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
         
         # Filter predictions and labels for negatives and by source
-        is_negative = (all_labels == 0)
+        #is_negative = (all_labels == 0)
 
+        # Berechnung der Metriken für jede Quelle
         for source in ["10X", "BA"]:
-            # Combine source filtering with negative filtering
-            source_mask = (val_sources == source) & is_negative
+            source_mask = (np.array(self.sources) == source) #& is_negative 
+            print(f"Source: {source}, Source Mask: {np.sum(source_mask)}")
+
             if np.sum(source_mask) == 0:
-                continue  # Skip if no data for this source
-            
+                continue  # Überspringen, wenn keine Daten vorhanden sind
+    
             source_labels = all_labels[source_mask]
-            source_predictions = all_predictions[source_mask]  # Assuming this is already a probability
-        
-            # Ensure `source_predictions` is 1-dimensional
-            source_predictions = source_predictions.reshape(-1, 1)  # Reshape to make it 2D
-        
-            # Log PR Curve for the specific source and negatives only
+            source_predictions = all_predictions[source_mask]
+            print(f"Source: {source}, Predictions Range: {source_predictions.min()} - {source_predictions.max()}")
+            print(f"Source: {source}, Labels: {np.unique(source_labels, return_counts=True)}")
+    
+            # Berechnung von Precision und Recall
+            precision = precision_score(source_labels, (source_predictions > 0.5), zero_division=0)
+            recall = recall_score(source_labels, (source_predictions > 0.5), zero_division=0)
+
+            tp = np.sum((source_predictions > 0.5) & (source_labels == 1))
+            fp = np.sum((source_predictions > 0.5) & (source_labels == 0))
+            fn = np.sum((source_predictions <= 0.5) & (source_labels == 1))
+            precision_manual = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall_manual = tp / (tp + fn) if (tp + fn) > 0 else 0
+            
+            print(f"Source: {source}, TP: {tp}, FP: {fp}, FN: {fn}, Precision: {precision_manual}, Recall: {recall_manual}")
+            
+    
+            # Loggen der Werte in W&B
             wandb.log({
-                f"PR Curve - {source} (Negatives Only)": wandb.plot.pr_curve(
-                    y_true=source_labels,
-                    y_probas=source_predictions,
-                    labels=["Not Binding"]  # For binary, we don't need both classes
-                )
+                f"Precision ({source})": precision,
+                f"Recall ({source})": recall,
+            }, commit=False)
+
+            # Berechnung der Confusion Matrix
+            conf_matrix_source = confusion_matrix(source_labels, source_predictions, labels=[0, 1])
+            tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
+            fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+            
+            # Berechnung der Negative Prediction Rate (NPR)
+            npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0
+            
+            # Logging der NPR in W&B
+            wandb.log({
+                f"val_true_negatives_{source}": tn_source,
+                f"val_false_positives_{source}": fp_source,
+                f"val_precision_{source}": precision_score(source_labels, source_predictions, zero_division=0),
+                f"val_negative_prediction_rate_{source}": npr_source
             })
 
-
-        # Angenommen, source_labels und source_predictions enthalten Ihre Labels und Vorhersagen:
-        for source in ["10X", "BA"]:
-            source_mask = (val_sources == source) & is_negative
-            
-            if np.sum(source_mask) == 0:
-                continue  # Skip if no data for this source
-            
-            source_labels = all_labels[source_mask]
-            source_predictions = all_predictions[source_mask]
-        
-            # Berechnung von Precision und Recall
-            precision, recall, _ = precision_recall_curve(source_labels, source_predictions)
-        
-            # Plot erstellen
-            plt.figure(figsize=(8, 6))
-            plt.plot(recall, precision, label=f"PR Curve - {source}")
-            plt.xlabel("Recall")
-            plt.ylabel("Precision")
-            plt.title(f"Precision-Recall Curve for {source} (Negatives Only)")
-            plt.legend()
-            
-            # Loggen des Plots zu WandB
-            wandb.log({f"PR Curve Chart - {source}": plt})
-            plt.close()
-
-
-        for source in ["10X", "BA"]:
-            source_mask = (val_sources == source)
-            
-            if np.sum(source_mask) == 0:
-                continue  # Skip if no data for this source
-            
-            source_labels = all_labels[source_mask]
-            source_predictions = all_predictions[source_mask]
-        
-            # Berechnung von Precision und Recall
-            precision, recall, _ = precision_recall_curve(source_labels, source_predictions)
-        
-            # Plot erstellen
-            plt.figure(figsize=(8, 6))
-            plt.plot(recall, precision, label=f"PR Curve - {source}")
-            plt.xlabel("Recall")
-            plt.ylabel("Precision")
-            plt.title(f"Precision-Recall Curve for {source}")
-            plt.legend()
-            
-            # Loggen des Plots zu WandB
-            wandb.log({f"PR Curve Chart - {source}": plt})
-            plt.close()
 
         positive_preds = all_predictions[all_labels == 1]
         negative_preds = all_predictions[all_labels == 0]
