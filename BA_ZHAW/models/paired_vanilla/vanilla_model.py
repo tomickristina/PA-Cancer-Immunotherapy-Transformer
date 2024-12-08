@@ -386,6 +386,7 @@ class VanillaModel(pl.LightningModule):
             # Extrahieren der True Negatives (TN) und false Negatives (FN)
             tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
             fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+            fp_source = conf_matrix_source[0, 1] if conf_matrix_source.shape == (2, 2) else 0
 
             # Berechnung der Negative Prediction Rate (NPR)
             npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0
@@ -563,6 +564,7 @@ class VanillaModel(pl.LightningModule):
             conf_matrix_source = confusion_matrix(source_labels, source_predictions, labels=[0, 1])
             tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
             fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+            fp_source = conf_matrix_source[0, 1] if conf_matrix_source.shape == (2, 2) else 0
             
             # Berechnung der Negative Prediction Rate (NPR)
             npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0

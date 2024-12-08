@@ -129,7 +129,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # "allele or gene"
+    precision = "gene" # "allele or gene"
     embed_base_dir = f"../../data_10x/embeddings/paired/{precision}"
     hyperparameter_tuning_with_WnB = False
 

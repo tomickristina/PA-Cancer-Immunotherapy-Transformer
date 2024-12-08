@@ -37,6 +37,9 @@ class BetaVanilla(Dataset):
         self.data_frame["TRBJ Index"] = self.data_frame["TRBJ"].map(trbJ_dict)
         self.data_frame["MHC Index"] = self.data_frame["MHC"].map(mhc_dict)
 
+        if "source" not in self.data_frame.columns:
+            raise KeyError("Spalte 'source' fehlt im Datensatz. Bitte sicherstellen, dass die Spalte vorhanden ist.")
+
         columns = list(self.data_frame.columns) 
         columns.remove('Binding')
         columns.append('Binding')
@@ -59,6 +62,7 @@ class BetaVanilla(Dataset):
         j_beta = row["TRBJ Index"]
         mhc = row["MHC Index"]
         task = row["task"]
+        source = row["source"]
         
         label = torch.tensor(row["Binding"], dtype=torch.float)
 
@@ -72,7 +76,8 @@ class BetaVanilla(Dataset):
             "j_beta": j_beta,
             "mhc": mhc,
             "task": task,
-            "label": label,
+            "label": label,            
+            "source": source,
         }
 
         if self.transform:

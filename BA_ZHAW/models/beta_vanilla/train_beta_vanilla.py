@@ -60,6 +60,7 @@ class PadCollate:
         mhc = []
         task = []
         labels = []
+        source = []
 
         for item in batch:
             epitope_embeddings.append(item["epitope_embedding"])
@@ -69,6 +70,7 @@ class PadCollate:
             mhc.append(item["mhc"])
             task.append(item["task"])
             labels.append(item["label"])
+            source.append(item["source"])
 
         max_length = self.seq_max_length
 
@@ -90,7 +92,8 @@ class PadCollate:
             "j_beta": j_beta,
             "mhc": mhc,
             "task": task,
-            "label": labels
+            "label": labels,
+            "source": source
         }
 
 

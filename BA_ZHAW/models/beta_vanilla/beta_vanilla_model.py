@@ -5,9 +5,10 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torchmetrics.classification import BinaryAUROC, BinaryAveragePrecision
-from sklearn.metrics import precision_score, confusion_matrix
+from sklearn.metrics import recall_score, precision_score, confusion_matrix, precision_recall_curve
 import wandb
-
+from torch.utils.data import WeightedRandomSampler
+import matplotlib.pyplot as plt
 
 class TransformerBlock(nn.Module):
     def __init__(self, embed_dim, n_heads, output_attn_w=False, n_hidden=64, dropout=0.1):
@@ -113,6 +114,10 @@ class BetaVanillaModel(pl.LightningModule):
         self.test_predictions = []
         self.test_labels = []
         self.test_tasks = []
+        self.sources = []
+
+        self.epitopes = []
+        self.trb_cdr3s = []
         
         self.allele_info_dim = 1024
         self.trbV_embed = nn.Embedding(trbV_embed_len, self.allele_info_dim)
@@ -200,6 +205,9 @@ class BetaVanillaModel(pl.LightningModule):
         task = batch["task"]
         # print(f"test_step: task: {task}")
         label = batch["label"]
+
+        source = batch.get("source", ["Unknown"] * len(label)) 
+        self.sources.extend(source)
         
         output = self(epitope_embedding, trb_cdr3_embedding, v_beta, j_beta, mhc).squeeze(1)
         prediction = torch.sigmoid(output)
@@ -244,11 +252,56 @@ class BetaVanillaModel(pl.LightningModule):
         self.log("AP_Test_TPP2", self.avg_precision(torch.tensor([item[0] for item in tpp_2]), torch.tensor([item[1] for item in tpp_2]).to(torch.long)), prog_bar=True)          
         
         self.log("ROCAUC_Test_TPP3", self.auroc(torch.tensor([item[0] for item in tpp_3]), torch.tensor([item[1] for item in tpp_3]).to(torch.long)), prog_bar=True)
-        self.log("AP_Test_TPP3", self.avg_precision(torch.tensor([item[0] for item in tpp_3]), torch.tensor([item[1] for item in tpp_3]).to(torch.long)), prog_bar=True)  
+        self.log("AP_Test_TPP3", self.avg_precision(torch.tensor([item[0] for item in tpp_3]), torch.tensor([item[1] for item in tpp_3]).to(torch.long)), prog_bar=True)
+
+
+        # Quelleninformationen verarbeiten
+        if hasattr(self, "sources") and len(self.sources) == len(test_labels):
+            test_sources = np.array(self.sources)
+        else:
+            test_sources = np.array(["Unknown"] * len(test_labels))
+            print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
+
+
+        for source in ["10X", "BA"]:
+            source_mask = (np.array(self.sources) == source)  # Filter für diese Quelle
+            if np.sum(source_mask) == 0:
+                continue  # Überspringen, wenn keine Daten vorhanden sind
+        
+            source_labels = test_labels[source_mask]
+            source_predictions = test_predictions[source_mask]
+        
+            # Umwandlung von Vorhersagen in binäre Werte (Threshold bei 0.5)
+            binary_predictions = (source_predictions >= 0.5).astype(int)
+        
+            # Berechnung von Precision und Recall
+            precision = precision_score(source_labels, binary_predictions, zero_division=0)
+            recall = recall_score(source_labels, binary_predictions, zero_division=0)
+        
+            # Berechnung der Confusion Matrix
+            conf_matrix_source = confusion_matrix(source_labels, binary_predictions, labels=[0, 1])
+        
+            # Extrahieren der True Negatives (TN) und false Negatives (FN)
+            tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
+            fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+            fp_source = conf_matrix_source[0, 1] if conf_matrix_source.shape == (2, 2) else 0
+
+            # Berechnung der Negative Prediction Rate (NPR)
+            npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0
+            
+            # Logging der NPR in W&B
+            wandb.log({
+                f"Precision ({source})": precision,
+                f"Recall ({source})": recall,
+                f"test_true_negatives_{source}": tn_source,
+                f"test_false_negatives_{source}": fn_source,
+                f"test_negative_prediction_rate_{source}": npr_source
+            })
 
         self.test_predictions.clear()
         self.test_labels.clear()
         self.test_tasks.clear()
+        self.sources.clear()
 
 
     def validation_step(self, batch, batch_idx):
@@ -258,9 +311,12 @@ class BetaVanillaModel(pl.LightningModule):
         j_beta = batch["j_beta"]
         mhc = batch["mhc"]
         label = batch["label"]
-        
+
+        source = batch.get("source", ["Unknown"] * len(label)) 
+        self.sources.extend(source)
+            
         output = self(epitope_embedding, trb_cdr3_embedding, v_beta, j_beta, mhc).squeeze(1)
-        
+
         val_loss = F.binary_cross_entropy_with_logits(output, label)
         self.log("val_loss", val_loss, batch_size=len(batch))
         
@@ -303,25 +359,103 @@ class BetaVanillaModel(pl.LightningModule):
         all_predictions = torch.cat(self.val_predictions).numpy()
         all_labels = torch.cat(self.val_labels).numpy()
 
-        # Berechne Precision
+        # Berechnung von Precision und Confusion Matrix
         precision = precision_score(all_labels, all_predictions, zero_division=0)
-
-        # Berechne Confusion Matrix
         conf_matrix = confusion_matrix(all_labels, all_predictions)
-
-        # Logge Precision
-        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
-
-        # Logge Confusion Matrix in W&B
+    
+        # Logging in W&B
         wandb.log({
+            "val_precision": precision,
             "val_confusion_matrix": wandb.plot.confusion_matrix(
                 probs=None,
                 y_true=all_labels,
                 preds=all_predictions,
                 class_names=["Not Binding", "Binding"]
-            )
+            ),
         })
+    
+        # Log Precision separat
+        self.log("val_precision", precision, on_epoch=True, prog_bar=True)
 
-        # Cleanup
+    
+        # Prüfen, ob Quelleninformationen vorhanden sind
+        if hasattr(self, "sources") and len(self.sources) == len(all_labels):
+            val_sources = np.array(self.sources)
+        else:
+            val_sources = np.array(["Unknown"] * len(all_labels))
+            print("Warnung: 'sources' wurde nicht korrekt initialisiert. Standardwerte werden verwendet.")
+        
+        # Filter predictions and labels for negatives and by source
+        #is_negative = (all_labels == 0)
+
+        # Berechnung der Metriken für jede Quelle
+        for source in ["10X", "BA"]:
+            print("sources check: ", self.sources[:5])
+            source_mask = (np.array(self.sources) == source) #& is_negative 
+            print(f"Source: {source}, Source Mask: {np.sum(source_mask)}")
+
+            if np.sum(source_mask) == 0:
+                continue  # Überspringen, wenn keine Daten vorhanden sind
+    
+            source_labels = all_labels[source_mask]
+            source_predictions = all_predictions[source_mask]
+            print(f"Source: {source}, Predictions Range: {source_predictions.min()} - {source_predictions.max()}")
+            print(f"Source: {source}, Labels: {np.unique(source_labels, return_counts=True)}")
+    
+            # Berechnung von Precision und Recall
+            precision = precision_score(source_labels, (source_predictions > 0.5), zero_division=0)
+            recall = recall_score(source_labels, (source_predictions > 0.5), zero_division=0)
+
+            tp = np.sum((source_predictions > 0.5) & (source_labels == 1))
+            fp = np.sum((source_predictions > 0.5) & (source_labels == 0))
+            fn = np.sum((source_predictions <= 0.5) & (source_labels == 1))
+            precision_manual = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall_manual = tp / (tp + fn) if (tp + fn) > 0 else 0
+            
+            print(f"Source: {source}, TP: {tp}, FP: {fp}, FN: {fn}, Precision: {precision_manual}, Recall: {recall_manual}")
+            
+    
+            # Loggen der Werte in W&B
+            wandb.log({
+                f"Precision ({source})": precision,
+                f"Recall ({source})": recall,
+            }, commit=False)
+
+            # Berechnung der Confusion Matrix
+            conf_matrix_source = confusion_matrix(source_labels, source_predictions, labels=[0, 1])
+            tn_source = conf_matrix_source[0, 0] if conf_matrix_source.shape == (2, 2) else 0  # Absicherung bei einer einzelnen Klasse
+            fn_source = conf_matrix_source[1, 0] if conf_matrix_source.shape == (2, 2) else 0
+            fp_source = conf_matrix_source[0, 1] if conf_matrix_source.shape == (2, 2) else 0
+            
+            # Berechnung der Negative Prediction Rate (NPR)
+            npr_source = tn_source / (tn_source + fp_source) if (tn_source + fp_source) > 0 else 0
+            
+            # Logging der NPR in W&B
+            wandb.log({
+                f"val_true_negatives_{source}": tn_source,
+                f"val_false_positives_{source}": fp_source,
+                f"val_precision_{source}": precision_score(source_labels, source_predictions, zero_division=0),
+                f"val_negative_prediction_rate_{source}": npr_source
+            })
+
+
+        positive_preds = all_predictions[all_labels == 1]
+        negative_preds = all_predictions[all_labels == 0]
+    
+        # Histogramm plotten
+        plt.figure(figsize=(10, 6))
+        plt.hist(negative_preds, bins=50, alpha=0.7, label="Negative Predictions")
+        plt.hist(positive_preds, bins=50, alpha=0.7, label="Positive Predictions")
+        plt.xlabel("Sigmoid Output")
+        plt.ylabel("Frequency")
+        plt.title("Prediction Distribution (Validation)")
+        plt.legend()
+        plt.show()
+    
+        # Logging in W&B (optional)
+        wandb.log({"validation_prediction_histogram": plt})
+    
+        # Cleanup für die nächste Epoche
         self.val_predictions.clear()
         self.val_labels.clear()
+        self.sources = []
