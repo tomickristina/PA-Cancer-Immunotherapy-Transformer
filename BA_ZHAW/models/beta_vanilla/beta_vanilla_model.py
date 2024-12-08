@@ -254,6 +254,8 @@ class BetaVanillaModel(pl.LightningModule):
         self.log("ROCAUC_Test_TPP3", self.auroc(torch.tensor([item[0] for item in tpp_3]), torch.tensor([item[1] for item in tpp_3]).to(torch.long)), prog_bar=True)
         self.log("AP_Test_TPP3", self.avg_precision(torch.tensor([item[0] for item in tpp_3]), torch.tensor([item[1] for item in tpp_3]).to(torch.long)), prog_bar=True)
 
+        test_predictions = torch.stack(self.test_predictions).squeeze(1).cpu().numpy()  
+        test_labels = torch.stack(self.test_labels).squeeze(1).cpu().numpy()
 
         # Quelleninformationen verarbeiten
         if hasattr(self, "sources") and len(self.sources) == len(test_labels):
