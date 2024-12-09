@@ -113,7 +113,7 @@ def get_embed_len(df, column_name):
 
 
 def main():
-    precision = "allele" # allele or gene
+    precision = "gene" # allele or gene
     embed_base_dir = f"../../data_10x/embeddings/beta/{precision}"
     hyperparameter_tuning_with_WnB = False
 
@@ -146,6 +146,10 @@ def main():
     df_val = pd.read_csv(val_file_path, sep="\t")
     df_full = pd.concat([df_train, df_test, df_val])
     print(df_train.head())
+
+    # Überprüfen, ob es NaN-Werte gibt
+    nan_counts = df_full.isna().sum()
+    print("Anzahl NaN-Werte pro Spalte:\n", nan_counts)
     
     trbV_dict = column_to_dictionray(df_full, "TRBV")
     trbJ_dict = column_to_dictionray(df_full, "TRBJ")

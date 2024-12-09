@@ -17,9 +17,9 @@ class BetaVanilla(Dataset):
         self.transform = transform
         self.data_frame = pd.read_csv(self.dataset_path, sep='\t')
         
-        epitope_embeddings = np.load(self.epitope_embeddings_path)
+        epitope_embeddings = np.load(self.epitope_embeddings_path, mmap_mode='r')
         # tra_embeddings = np.load(self.tra_embeddings_path)
-        trb_embeddings = np.load(self.trb_embeddings_path)
+        trb_embeddings = np.load(self.trb_embeddings_path, mmap_mode='r')
 
         # traV_dict = traV
         # traJ_dict = traJ
@@ -44,6 +44,14 @@ class BetaVanilla(Dataset):
         columns.remove('Binding')
         columns.append('Binding')
         self.data_frame = self.data_frame[columns]
+
+        #Check for unmapped TRB_CDR3 sequences
+        unmapped_trb = self.data_frame[self.data_frame["TRB_CDR3 Embedding"].isna()]["TRB_CDR3"].unique()
+        print("Unmapped TRB_CDR3 sequences:", len(unmapped_trb), unmapped_trb[:10])
+        
+        # Check for unmapped Epitope sequences
+        unmapped_epitope = self.data_frame[self.data_frame["Epitope Embedding"].isna()]["Epitope"].unique()
+        print("Unmapped Epitope sequences:", len(unmapped_epitope), unmapped_epitope[:10])
         
 
     def __len__(self):
