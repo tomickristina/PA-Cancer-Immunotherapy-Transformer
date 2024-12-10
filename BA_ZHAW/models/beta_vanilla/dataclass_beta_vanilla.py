@@ -17,9 +17,9 @@ class BetaVanilla(Dataset):
         self.transform = transform
         self.data_frame = pd.read_csv(self.dataset_path, sep='\t')
         
-        epitope_embeddings = np.load(self.epitope_embeddings_path, mmap_mode='r')
+        epitope_embeddings = np.load(self.epitope_embeddings_path)
         # tra_embeddings = np.load(self.tra_embeddings_path)
-        trb_embeddings = np.load(self.trb_embeddings_path, mmap_mode='r')
+        trb_embeddings = np.load(self.trb_embeddings_path)
 
         # traV_dict = traV
         # traJ_dict = traJ
