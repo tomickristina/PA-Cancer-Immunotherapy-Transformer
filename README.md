@@ -20,7 +20,7 @@ The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR
 The data is standardized, harmonized, and split into training, validation, and test sets. Negative samples are synthetically generated to ensure a balanced dataset on branch ba but on branch 10X we used the new 10X dataset. The [Data Pipeline 10x-allrows50-datacheck](#BA_ZHAW/data_pipeline_10x-allrows50-datacheck.ipynb) section explains how you can run the data pipeline locally.
 
 ### Model Architectures
-Various deep learning architectures are explored, including attention-based models. The [Model Training](#train-a-model) section explains how the training works in this project.
+Various deep learning architectures are explored, including attention-based models. The [Model Training](#train-a-model) section explains how the training works in this project. For 10X Model training go on branch 10X and open there Model Training.
 
 ### Repository Structure
 `data/`: This will be used to store data locally\
