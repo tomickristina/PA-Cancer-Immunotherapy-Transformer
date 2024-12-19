@@ -10,11 +10,14 @@
 ## About this project
 This project builds upon the foundational work of a Bachelor's thesis (https://github.com/vegger/BA_ZHAW), which focuses on predicting TCR-Epitope binding affinity to advance immunotherapy. The primary objective of the thesis is to develop robust machine learning models that can predict the binding between T cell receptors (TCRs) and peptide-major histocompatibility complexes (pMHCs). This capability is crucial for enabling more effective and personalized immunotherapy.
 
+## Credits
+This project builds upon the work of the BA_ZHAW project (https://github.com/vegger/BA_ZHAW). Portions of the README, data scripts, and model architectures are adapted from that repository.
+
 ### Data Sources
-The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR](http://friedmanlab.weizmann.ac.il/McPAS-TCR/), and [IEDB](https://www.iedb.org/), which provide sequences and true postitive binding data for TCRs and pMHCs. Additionally we added the [10X](https://www.10xgenomics.com/datasets?query=%22A%20new%20way%20of%20exploring%20immunity%E2%80%93linking%20highly%20multiplexed%20antigen%20recognition%20to%20immune%20repertoire%20and%20phenotype%22&page=1&configure%5BhitsPerPage%5D=50&configure%5BmaxValu).
+The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR](http://friedmanlab.weizmann.ac.il/McPAS-TCR/), and [IEDB](https://www.iedb.org/), which provide sequences and true postitive binding data for TCRs and pMHCs. Additionally we added [10X](https://www.10xgenomics.com/datasets?query=%22A%20new%20way%20of%20exploring%20immunity%E2%80%93linking%20highly%20multiplexed%20antigen%20recognition%20to%20immune%20repertoire%20and%20phenotype%22&page=1&configure%5BhitsPerPage%5D=50&configure%5BmaxValu).
 
 ### Data Processing
-The data is standardized, harmonized, and split into training, validation, and test sets. Negative samples are synthetically generated to ensure a balanced dataset. The [Data Pipeline 10X allrows50](#run-data-pipeline-10x-allwrows50) section explains how you can run the data pipeline locally.
+The data is standardized, harmonized, and split into training, validation, and test sets. Negative samples are synthetically generated to ensure a balanced dataset on branch ba but on branch 10X we used the new 10X dataset. The [Data Pipeline 10x-allrows50-datacheck](#BA_ZHAW/data_pipeline_10x-allrows50-datacheck.ipynb) section explains how you can run the data pipeline locally.
 
 ### Model Architectures
 Various deep learning architectures are explored, including attention-based models. The [Model Training](#train-a-model) section explains how the training works in this project.
@@ -33,10 +36,6 @@ Make sure you have a proper GPU and CUDA (version 12.1) installed. Other CUDA ve
 ### Weights and Biases account
 The [Weights and Biases](https://wandb.ai/site) account is used as MLOps Plattform to store datasets and do some model tuning.
 
-### Environment Variables
-To run this project, you will need to add the following environment variable to your .env file.\
-`MAIN_PROJECT_NAME`\
-This environment variable should reflect how your project is named in your Weights & Biases account.
 
 ### Conda Environment
 We recommend to have Anaconda installed which provides package, dependency, and environment management for any language. To import the conda environment, execute the following command in the root folder of this project and activate it.
@@ -87,11 +86,10 @@ pip install sentencepiece
 - Ensure the project is set as the root directory in your IDE. Otherwise, you may encounter path errors when running commands like %run path/to/other_notebook.ipynb.
 
 ### Run Data Pipeline
-- place the [plain_data](https://www.dropbox.com/scl/fo/ucke53zlkj9sau6qlg63q/ANL6-gCocJ5sj_zs0T59CVI?rlkey=ogbq0p0zedpef29fif1ihfs3u&st=n2e2x3d5&dl=0) folder in the data folder, where the README_PLAIN_DATA.md is located.
+- place the [plain_data](https://www.dropbox.com/scl/fo/u38u47xq4kf51zhds16mz/AImhPziSKkpz1HS7ORnuC1c?rlkey=3we4ggnd4qjntv4gu1dgibtma&e=1&st=lc52udh3&dl=0) folder in the data folder, where the README_PLAIN_DATA.md is located.
 - In order to execute the data pipeline, which harmonizes and splits data, then creates embeddings and PhysicoChemical properties, do the following:
   - Open data_pipeline.ipynb in the root folder
   - set the variable precision to `precision="allele"` or `precision="gene"`
-  - in some environments like [lightning.ai](https://lightning.ai/), the `pipeline_data = './data'` needs to have an absolute path instead of the relative.
   - Run the notebook with the newly created conda environment
   - The output is placed in the `./data` folder
   - The final split for beta paired datasets can be found under `./data/splitted_data/{precision}/ `
@@ -122,14 +120,3 @@ pip install sentencepiece
     ```
     
   - After training one can see the checkpoint file (`.ckpt`) in the directory `checkpoints` in a directory named like the Weights & Biases run. The checkoint is saved at the point where the AP_Val metric was at its highest. Furthermore, the file with the `.pth` extension is the final model. These files are in the same directory as the training script.
-
-## Additional Data
-Prebuilt Embeddings, Models, ModelRuns and Physicochemical Properties are shared over [sharepoint](https://zhaw-my.sharepoint.com/:u:/g/personal/eggerval_students_zhaw_ch/EaZpwuhuUn9DpY6PcXrmrgEB5K-Qw5Git-W7o914mMRa_w?e=dQxMjw). Feel free to download.<br>
-The provided models are checkpoints evaluated at the AP_Val maximum point. These need to be trained further to get the same outputs as in the work. This has been decided so that they can be used as a starting point for task-specific training (TPP).
-
-## Disclaimer
-- The data pipeline and the model trainings were executed in the [lightning.ai](https://lightning.ai/) environment. Sometimes there were Cuda memory errors, then the VM had to be restarted for it to work again.
-- In Windows environment it was observed that the creation of the PhysicoChemical properties can lead to problems, in this case Assertion Error is thrown, which says that a scalar has the length 88 instead of 101. The authors are thrilled to know why.
-- **Attention** if one uses a legacy checkpoint of the Paired Vanilla model (vanilla_model.py) provided in the shared files. The checkpoints contain a unnecessary building block, namely "multihead_attn_physico" which must **NOT** be used. Filter therefore the state_dict, as shown after if one would use the checkpoints to reproduce the results:
-  
-  `filtered_state_dict = {k: v for k, v in state_dict.items() if "multihead_attn_physico" not in k}`
