@@ -7,8 +7,12 @@
 - [@tomickristina](https://github.com/tomickristina)
 - [@oscario-20](https://github.com/oscario-20)
 
-## About this project
-This project builds upon the foundational work of a Bachelor's thesis (https://github.com/vegger/BA_ZHAW), which focuses on predicting TCR-Epitope binding affinity to advance immunotherapy. The primary objective of the thesis is to develop robust machine learning models that can predict the binding between T cell receptors (TCRs) and peptide-major histocompatibility complexes (pMHCs). This capability is crucial for enabling more effective and personalized immunotherapy.
+## About this Project
+This project builds upon the foundational work of a Bachelor's thesis from the [BA_ZHAW repository](https://github.com/vegger/BA_ZHAW). The original project focused on TCR-Epitope binding affinity prediction. Our contributions include:
+- The integration of the **10X dataset** into the data processing pipeline.
+- Modifications to the **model training pipeline** to ensure compatibility with the 10X data.
+- Improvements to the training process by adding support for **Weights & Biases sweeps**.
+- Introducing a **new physicochemical embedding method** and adapting the model training
 
 ## Credits
 This project builds upon the work of the [BA_ZHAW project](https://github.com/vegger/BA_ZHAW). Portions of the README, data scripts, and model architectures are adapted from that repository.
