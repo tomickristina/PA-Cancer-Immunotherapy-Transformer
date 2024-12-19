@@ -1,6 +1,6 @@
 ## Authors
-- [@liselott321] (https://github.com/liselott321)
-- [@tomickristina] (https://github.com/tomickristina)
+- [@liselott321](https://github.com/liselott321)
+- [@tomickristina](https://github.com/tomickristina)
 - [@oscario-20](https://github.com/oscario-20)
 
 ## About this project
