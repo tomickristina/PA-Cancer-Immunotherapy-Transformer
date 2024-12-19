@@ -20,7 +20,7 @@ The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR
 The data is standardized, harmonized, and split into training, validation, and test sets. Negative samples are synthetically generated to ensure a balanced dataset on branch ba but on branch 10X we used the new 10X dataset. The [Data Pipeline 10x-allrows50-datacheck](#BA_ZHAW/data_pipeline_10x-allrows50-datacheck.ipynb) section explains how you can run the data pipeline locally.
 
 ### Model Architectures
-Various deep learning architectures are explored, including attention-based models. The [Model Training](#train-a-model) section explains how the training works in this project.
+Various deep learning architectures are explored, including attention-based models. The [Model Training](#train-a-model) section explains how the training works in this project. For 10X Model training go on branch 10X and open there Model Training.
 
 ### Repository Structure
 `data/`: This will be used to store data locally\
@@ -88,11 +88,11 @@ pip install sentencepiece
 ### Run Data Pipeline
 - place the [plain_data](https://www.dropbox.com/scl/fo/u38u47xq4kf51zhds16mz/AImhPziSKkpz1HS7ORnuC1c?rlkey=3we4ggnd4qjntv4gu1dgibtma&e=1&st=lc52udh3&dl=0) folder in the data folder, where the README_PLAIN_DATA.md is located.
 - In order to execute the data pipeline, which harmonizes and splits data, then creates embeddings and PhysicoChemical properties, do the following:
-  - Open data_pipeline.ipynb in the root folder
+  - Open data_pipeline.ipynb in the root folder or data_pipeline_10x-allrows50-datacheck.ipynb on the 10X branch for including 10X data 
   - set the variable precision to `precision="allele"` or `precision="gene"`
   - Run the notebook with the newly created conda environment
-  - The output is placed in the `./data` folder
-  - The final split for beta paired datasets can be found under `./data/splitted_data/{precision}/ `
+  - The output is placed in the `./data` folder od `./data_10x` folder
+  - The final split for beta paired datasets can be found under `./data/splitted_data/{precision}/ ` or `./data_10x/splitted_data/{precision}/ `
   - Run the notebook again with different precision to create all datasets
 
 ### Train a Model
