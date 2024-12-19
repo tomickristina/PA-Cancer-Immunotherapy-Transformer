@@ -107,8 +107,8 @@ pip install sentencepiece
   - `./models/physico/train_physico.py`
   - `./models/vanilla/train_vanilla.py`
   - `./models/random_forest_classifiers/train_valid_test_random_forest_classifier_with_physico.py`
-  - 
-/train_valid_test_random_forest_classifier_with_physico.py
+  - `./models/paired_vanilla_physico/train_vanilla`
+
 - Open the train skript of your choice and head to the top of the main function.
   - set value for the variable `precision`
   - If you had to change to an absolute path in the data pipeline:
