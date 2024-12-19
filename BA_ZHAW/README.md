@@ -1,9 +1,10 @@
 ## Authors
-- [@vegger](https://www.github.com/vegger)
-- [@cyrilgabriele](https://www.github.com/cyrilgabriele)
+- [@liselott321](https://github.com/liselott321)
+- [@tomickristina](https://github.com/tomickristina)
+- [@oscario-20](https://github.com/oscario-20)
 
 ## About this project
-This project is part of the authors' Bachelor's thesis, which is about predicting TCR-Epitope binding affinity for advanced immunotherapy. The aim of this thesis is to develop machine learning models capable of predicting the binding between T cell receptors (TCRs) and peptide-major histocompatibility complexes (pMHCs), thereby advancing personalized immunotherapy. By leveraging deep learning techniques, the project addresses the challenges posed by the highly individualistic nature of the human immune system and the lack of diverse, comprehensive datasets.
+This project builds upon the foundational work of a Bachelor's thesis (https://github.com/vegger/BA_ZHAW), which focuses on predicting TCR-Epitope binding affinity to advance immunotherapy. The primary objective of the thesis is to develop robust machine learning models that can predict the binding between T cell receptors (TCRs) and peptide-major histocompatibility complexes (pMHCs). This capability is crucial for enabling more effective and personalized immunotherapy.
 
 ### Data Sources
 The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR](http://friedmanlab.weizmann.ac.il/McPAS-TCR/), and [IEDB](https://www.iedb.org/), which provide sequences and true postitive binding data for TCRs and pMHCs.
