@@ -88,11 +88,11 @@ pip install sentencepiece
 ### Run Data Pipeline
 - place the [plain_data](https://www.dropbox.com/scl/fo/u38u47xq4kf51zhds16mz/AImhPziSKkpz1HS7ORnuC1c?rlkey=3we4ggnd4qjntv4gu1dgibtma&e=1&st=lc52udh3&dl=0) folder in the data folder, where the README_PLAIN_DATA.md is located.
 - In order to execute the data pipeline, which harmonizes and splits data, then creates embeddings and PhysicoChemical properties, do the following:
-  - Open data_pipeline.ipynb in the root folder
+  - Open data_pipeline.ipynb in the root folder or data_pipeline_10x-allrows50-datacheck.ipynb on the 10X branch for including 10X data 
   - set the variable precision to `precision="allele"` or `precision="gene"`
   - Run the notebook with the newly created conda environment
-  - The output is placed in the `./data` folder
-  - The final split for beta paired datasets can be found under `./data/splitted_data/{precision}/ `
+  - The output is placed in the `./data` folder od `./data_10x` folder
+  - The final split for beta paired datasets can be found under `./data/splitted_data/{precision}/ ` or `./data_10x/splitted_data/{precision}/ `
   - Run the notebook again with different precision to create all datasets
 
 ### Train a Model
