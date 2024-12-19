@@ -10,6 +10,9 @@
 ## About this project
 This project builds upon the foundational work of a Bachelor's thesis (https://github.com/vegger/BA_ZHAW), which focuses on predicting TCR-Epitope binding affinity to advance immunotherapy. The primary objective of the thesis is to develop robust machine learning models that can predict the binding between T cell receptors (TCRs) and peptide-major histocompatibility complexes (pMHCs). This capability is crucial for enabling more effective and personalized immunotherapy.
 
+## Credits
+This project builds upon the work of the BA_ZHAW project (https://github.com/vegger/BA_ZHAW). Portions of the README, data scripts, and model architectures are adapted from that repository. The authors of the BA_ZHAW project retain their rights under the [insert license name here] license.
+
 ### Data Sources
 The primary sources of data include [VDJdb](https://vdjdb.cdr3.net/), [McPAS-TCR](http://friedmanlab.weizmann.ac.il/McPAS-TCR/), and [IEDB](https://www.iedb.org/), which provide sequences and true postitive binding data for TCRs and pMHCs. Additionally we added [10X](https://www.10xgenomics.com/datasets?query=%22A%20new%20way%20of%20exploring%20immunity%E2%80%93linking%20highly%20multiplexed%20antigen%20recognition%20to%20immune%20repertoire%20and%20phenotype%22&page=1&configure%5BhitsPerPage%5D=50&configure%5BmaxValu).
 
