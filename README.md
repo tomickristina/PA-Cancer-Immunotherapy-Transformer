@@ -84,7 +84,7 @@ pip install sentencepiece
 ## Run Locally
 - Clone the project
 ```bash
-  git clone https://github.com/vegger/BA_ZHAW.git
+  git clone https://github.com/tomickristina/PA-Cancer-Immunotherapy-Transformer/BA_ZHAW
 ```
 - Create conda environment as explained above and use it from now on
 - Open the project in the IDE of your choice
@@ -106,6 +106,7 @@ pip install sentencepiece
   - `./models/beta_vanilla/train_beta_vanilla.py`
   - `./models/physico/train_physico.py`
   - `./models/vanilla/train_vanilla.py`
+  - 
 - Open the train skript of your choice and head to the top of the main function.
   - set value for the variable `precision`
   - If you had to change to an absolute path in the data pipeline:
