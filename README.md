@@ -120,10 +120,10 @@ pip install sentencepiece
   
     ```
     # ! here random hyperparameter values set !
-    hyperparameters["optimizer"] = "adam"
+    hyperparameters["optimizer"] = "sgd"
     hyperparameters["learning_rate"] = 5e-3
     hyperparameters["weight_decay"] = 0.075
-    hyperparameters["dropout_attention"] = 0.3
+    hyperparameters["dropout_attention"] = 0.1
     hyperparameters["dropout_linear"] = 0.45
     ```
     
